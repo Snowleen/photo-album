@@ -1,0 +1,18 @@
+# ME-mory
+
+> ME-mory (also written "Memory" or "MEmory") is a free, private online photo album web app for couples, families, pets and individuals. People keep their photos in a private shared space, organise them into albums, add a capture date and note to each photo, and download photos as JPG, PNG or PDF.
+
+## Key facts
+- Price: free.
+- Privacy: albums are private. Only members of a space can sign in and see its photos; photo links expire after a few hours. Album pages are not public or searchable.
+- Space types: Individual (1 person), Couple (2 people), Family (up to 10 people), Pet (up to 10 people). One person can belong to several spaces and switch between them.
+- Photos: upload from phone or computer; automatic upload date; optional capture date and remark/note; organise into albums.
+- Export: save a single photo as JPG, PNG or PDF; export several selected photos together as one PDF (one photo per page with date and note).
+- Deleting: deleted photos go to a Recycle bin and are permanently deleted after 30 days unless restored; they can also be deleted forever immediately.
+- Works on phones: can be installed to the home screen (Android "Install app", iPhone "Share → Add to Home Screen") and opens full-screen like an app.
+- Getting an account: request one on the Sign up page with name and email; after the administrator approves it, sign-in details are emailed.
+
+## Links
+- Home: https://photo-album-phi-six.vercel.app/
+- Sign up (free account request): https://photo-album-phi-six.vercel.app/signup
+- Sign in: https://photo-album-phi-six.vercel.app/login

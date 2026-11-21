@@ -3,8 +3,10 @@ export default function manifest() {
   return {
     name: 'ME-mory',
     short_name: 'ME-mory',
-    description: 'A private home for the photos you share with the people you love.',
-    start_url: '/',
+    description: 'Free private photo album for couples, families and pets.',
+    categories: ['photo', 'lifestyle', 'social'],
+    lang: 'en',
+    start_url: '/?source=pwa',
     scope: '/',
     display: 'standalone',
     orientation: 'portrait',
