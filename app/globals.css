@@ -530,3 +530,11 @@ a.btn { text-decoration: none; }
 .full-logo { display: block; max-width: 100%; }
 .card-logo { display: flex; justify-content: center; margin: -10px 0 2px; }
 @media (max-width: 860px) { .card-logo { display: none; } }
+
+/* Sign-in page buttons: top-left over the pink panel (clear of the form) */
+.auth-top { left: clamp(24px, 4vw, 56px); right: auto; top: 26px; }
+.auth-top .top-btn { background: rgba(255, 255, 255, 0.16); color: #fff; border-color: rgba(255, 255, 255, 0.75); box-shadow: none; backdrop-filter: blur(4px); }
+.auth-top .top-btn:hover { background: rgba(255, 255, 255, 0.28); }
+.auth-top .top-btn.solid { background: #fff; color: var(--rose-dark); border-color: #fff; box-shadow: 0 6px 18px -6px rgba(120, 20, 60, 0.45); }
+.auth-top .top-btn.solid:hover { background: #fff5f8; }
+@media (max-width: 860px) { .auth-top { left: auto; right: 14px; top: 14px; } }
