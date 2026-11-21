@@ -12,14 +12,14 @@ export async function POST(req) {
   }
 
   try {
-    const { email = '', password = '' } = await readJson(req);
+    const { email = '', password = '', remember = true } = await readJson(req);
     const id = String(email).trim();
     if (!id || !password) return fail('Please enter your email and password');
 
     // The superadmin keeps signing in with the fixed username.
     if (isSuperadminName(id)) {
       if (password === process.env.SUPERADMIN_PASSWORD) {
-        await createSession({ role: 'superadmin' });
+        await createSession({ role: 'superadmin' }, !!remember);
         return ok({ role: 'superadmin' });
       }
       return fail('Invalid email or password', 401);
@@ -45,7 +45,7 @@ export async function POST(req) {
       .eq('user_id', user.id);
     if (!count) return fail('Your account has not been added to any album yet. Please contact the administrator.', 403);
 
-    await createSession({ role: 'user', uid: user.id });
+    await createSession({ role: 'user', uid: user.id }, !!remember);
     return ok({ role: 'user' });
   } catch (e) {
     return fail(`Server error: ${e.message}`, 500);
