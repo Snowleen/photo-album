@@ -15,6 +15,27 @@ const MODES = {
 
 const who = (u) => u.email || (u.username ? `@${u.username}` : '');
 
+/** Matches nickname, email, old username or any space name (case-insensitive). */
+function filterUsers(users, query) {
+  const q = query.trim().toLowerCase();
+  if (!q) return users;
+  return users.filter((u) =>
+    [u.display_name, u.email, u.username, ...u.spaces.map((s) => s.name)].some((v) => (v || '').toLowerCase().includes(q))
+  );
+}
+
+function SearchBox({ value, onChange, placeholder, autoFocus }) {
+  return (
+    <div className="search-box">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden>
+        <circle cx="11" cy="11" r="7" /><path d="M20 20l-3.5-3.5" />
+      </svg>
+      <input type="search" value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} autoFocus={autoFocus} />
+      {value && <button type="button" className="search-clear" onClick={() => onChange('')} aria-label="Clear search">✕</button>}
+    </div>
+  );
+}
+
 export default function AdminPage() {
   const router = useRouter();
   const [spaces, setSpaces] = useState(null);
@@ -22,6 +43,7 @@ export default function AdminPage() {
   const [error, setError] = useState('');
   const [toast, setToast] = useState('');
   const [tab, setTab] = useState('spaces'); // spaces | logins
+  const [loginQuery, setLoginQuery] = useState('');
 
   // Remember the last tab on this device.
   useEffect(() => {
@@ -191,9 +213,11 @@ export default function AdminPage() {
           <span className="muted small">{users.length} total · add new logins from a space’s “+ Add member”</span>
         </div>
         {users.length === 0 && <p className="muted empty">No logins yet. Go to Album spaces and use “+ Add member” to create one.</p>}
-        {users.length > 0 && (
+        {users.length > 0 && <SearchBox value={loginQuery} onChange={setLoginQuery} placeholder="Search by nickname, email or space…" />}
+        {users.length > 0 && filterUsers(users, loginQuery).length === 0 && <p className="muted empty">No logins match “{loginQuery}”.</p>}
+        {filterUsers(users, loginQuery).length > 0 && (
           <div className="card accounts">
-            {users.map((u) => (
+            {filterUsers(users, loginQuery).map((u) => (
               <div key={u.id} className={`account-row ${u.active ? '' : 'disabled'}`}>
                 <div className="account-info">
                   <div className="ellipsis"><strong>{u.display_name}</strong> <span className="muted small">{who(u)}{!u.active && ' · disabled'}</span></div>
@@ -272,6 +296,8 @@ function NewSpaceModal({ onClose, onDone }) {
 function AddMemberModal({ space, users, onClose, onDone }) {
   const [tab, setTab] = useState('email');
   const [userId, setUserId] = useState('');
+  const [query, setQuery] = useState('');
+  const shown = filterUsers(users, query);
   const [email, setEmail] = useState('');
   const [name, setName] = useState('');
   const [password, setPassword] = useState('');
@@ -309,8 +335,10 @@ function AddMemberModal({ space, users, onClose, onDone }) {
         ) : (
           <>
             <p className="muted small">Give someone who already has a login access to this space too. They can switch between their spaces after signing in.</p>
+            <SearchBox value={query} onChange={setQuery} placeholder="Search by nickname, email or space…" autoFocus />
             <div className="pick-list">
-              {users.map((u) => (
+              {shown.length === 0 && <p className="muted small center-text">No logins match “{query}”.</p>}
+              {shown.map((u) => (
                 <button type="button" key={u.id} className={`pick ${userId === u.id ? 'active' : ''}`} onClick={() => setUserId(u.id)}>
                   <span className="avatar">{u.display_name.slice(0, 1).toUpperCase()}</span>
                   <span className="grow min0">
