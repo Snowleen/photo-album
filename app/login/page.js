@@ -90,10 +90,7 @@ export default function LoginPage() {
           <button className="auth-submit" disabled={busy || !email || !password}>
             {busy ? <span className="spinner" /> : 'Sign in'}
           </button>
-          <p className="auth-foot">
-            New here? <Link href="/signup" className="text-link">Request an account</Link>
-            <br />Forgot your password? Ask your album administrator.
-          </p>
+          <p className="auth-foot">Forgot your password? Ask your album administrator.</p>
         </form>
     </AuthShell>
   );
