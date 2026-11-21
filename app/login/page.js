@@ -6,6 +6,7 @@ import Link from 'next/link';
 import AuthShell, { PasswordInput } from '@/components/AuthShell';
 import { FullLogo } from '@/components/Logo';
 import { InstallButton } from '@/components/Pwa';
+import { MaintenanceCard, useMaintenance } from '@/components/MaintenanceNotice';
 
 const REMEMBER_KEY = 'pa_remember'; // stores { email } on this device when "Remember me" is ticked
 
@@ -16,6 +17,7 @@ export default function LoginPage() {
   const [remember, setRemember] = useState(false);
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
+  const maintenance = useMaintenance();
 
   // Restore the remembered email and checkbox state.
   useEffect(() => {
@@ -55,6 +57,7 @@ export default function LoginPage() {
           <div className="card-logo"><FullLogo width={150} /></div>
           <h2>Welcome back</h2>
           <p className="auth-muted">Sign in to continue to your album</p>
+          <MaintenanceCard status={maintenance} />
 
           <div className="field">
             <label htmlFor="email">Email</label>

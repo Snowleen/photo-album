@@ -550,3 +550,34 @@ a.btn { text-decoration: none; }
 }
 @media (max-width: 420px) { .sort-select > span { display: none; } }
 .search-clear { top: 50%; transform: translateY(-50%); display: grid; place-items: center; }
+
+/* ---------- Maintenance ---------- */
+.maint { display: flex; flex-direction: column; gap: 16px; max-width: 760px; }
+.maint-status { display: flex; align-items: center; gap: 14px; padding: 16px 18px; }
+.maint-status strong { font-size: 1.02rem; }
+.maint-status .small { color: var(--muted); margin-top: 2px; line-height: 1.5; }
+.maint-dot { width: 12px; height: 12px; border-radius: 50%; flex: none; background: #9ca3af; }
+.s-scheduled .maint-dot { background: #f59e0b; box-shadow: 0 0 0 5px #fef3c7; }
+.s-active .maint-dot { background: #e0527f; box-shadow: 0 0 0 5px #fde7ef; animation: pulse 1.6s ease-in-out infinite; }
+.s-off .maint-dot { background: #22c55e; box-shadow: 0 0 0 5px #dcfce7; }
+@keyframes pulse { 50% { box-shadow: 0 0 0 9px rgba(224, 82, 127, 0.08); } }
+.maint-form h3 { font-family: var(--font-sans), sans-serif; font-size: 1.05rem; }
+.field-label { font-weight: 600; font-size: 0.9rem; margin-bottom: 8px; }
+.small-seg { max-width: 260px; margin-bottom: 10px; }
+.chips-row { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 10px; }
+.duration-row { max-width: 280px; }
+.duration-row input { max-width: 110px; }
+.maint-summary { background: var(--accent-soft); border-radius: 10px; padding: 10px 12px; line-height: 1.5; }
+
+.maint-card { display: flex; gap: 12px; padding: 14px; border-radius: 14px; font-size: 0.9rem; line-height: 1.5; }
+.maint-card p { margin: 2px 0 0; }
+.maint-card .maint-when { margin-top: 6px; }
+.maint-card.active { background: #fff1f2; border: 1px solid #fecdd3; color: #881337; }
+.maint-card.scheduled { background: #fffbeb; border: 1px solid #fde68a; color: #78350f; }
+.maint-card-icon { flex: none; width: 38px; height: 38px; border-radius: 12px; display: grid; place-items: center; background: rgba(255, 255, 255, 0.7); }
+
+.maint-banner { position: relative; z-index: 2; display: flex; align-items: flex-start; gap: 10px; margin: 10px 16px 0; padding: 12px 14px; border-radius: 14px; background: #fffbeb; border: 1px solid #fde68a; color: #78350f; font-size: 0.88rem; line-height: 1.5; max-width: 1068px; }
+@media (min-width: 1100px) { .maint-banner { margin: 10px auto 0; } }
+.maint-banner .icon { margin-top: 1px; }
+.duration-row input { flex: 0 0 96px; max-width: none; width: 96px; }
+.duration-row select { flex: 1; width: auto; }

@@ -5,7 +5,9 @@ import { api, fmtDate } from '@/lib/client';
 import Modal from '@/components/Modal';
 import Logo from '@/components/Logo';
 import { useDialog } from '@/components/useDialog';
-import { ModeIcon, AlbumsIcon, UsersIcon, CloseIcon, InboxIcon } from '@/components/Icons';
+import { ModeIcon, AlbumsIcon, UsersIcon, CloseIcon, InboxIcon, WrenchIcon } from '@/components/Icons';
+import MaintenancePanel from '@/components/MaintenancePanel';
+import { useMaintenance } from '@/components/MaintenanceNotice';
 
 const MODES = {
   individual: { label: 'Individual', limit: 1 },
@@ -23,6 +25,14 @@ function filterUsers(users, query) {
   return users.filter((u) =>
     [u.display_name, u.email, u.username, ...u.spaces.map((s) => s.name)].some((v) => (v || '').toLowerCase().includes(q))
   );
+}
+
+/** Small status pill on the Maintenance tab. */
+function MaintBadge() {
+  const m = useMaintenance();
+  if (m.state === 'active') return <span className="count alert">On</span>;
+  if (m.state === 'scheduled') return <span className="count">Soon</span>;
+  return null;
 }
 
 /** Matches space name, theme, or any member's name / email. */
@@ -53,6 +63,7 @@ export default function AdminPage() {
   const [users, setUsers] = useState([]);
   const [requests, setRequests] = useState([]);
   const [approving, setApproving] = useState(null);
+  const [maintKey, setMaintKey] = useState(0); // refreshes the tab badge after changes
   const [error, setError] = useState('');
   const [toast, setToast] = useState('');
   const [tab, setTab] = useState('spaces'); // spaces | logins
@@ -61,7 +72,7 @@ export default function AdminPage() {
 
   // Remember the last tab on this device.
   useEffect(() => {
-    try { const t = localStorage.getItem('admin_tab'); if (t === 'logins' || t === 'requests') setTab(t); } catch {}
+    try { const t = localStorage.getItem('admin_tab'); if (['logins', 'requests', 'maintenance'].includes(t)) setTab(t); } catch {}
   }, []);
   function switchTab(t) {
     setTab(t);
@@ -168,6 +179,9 @@ export default function AdminPage() {
         <button className={tab === 'requests' ? 'active' : ''} onClick={() => switchTab('requests')}>
           <InboxIcon size={17} /> Requests {requests.length > 0 && <span className="count alert">{requests.length}</span>}
         </button>
+        <button className={tab === 'maintenance' ? 'active' : ''} onClick={() => switchTab('maintenance')}>
+          <WrenchIcon size={17} /> Maintenance <MaintBadge key={maintKey} />
+        </button>
       </nav>
 
       <main className="container">
@@ -271,6 +285,14 @@ export default function AdminPage() {
             ))}
           </div>
         )}
+        </>)}
+
+        {tab === 'maintenance' && (<>
+        <div className="row-between toolbar">
+          <h2>Maintenance</h2>
+          <span className="muted small">Sign everyone out and show a message while you work on ME-mory</span>
+        </div>
+        <MaintenancePanel ask={ask} onChanged={() => setMaintKey((k) => k + 1)} />
         </>)}
 
         {tab === 'requests' && (<>

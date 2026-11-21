@@ -6,6 +6,7 @@ import { exportImage, exportPdf } from '@/lib/exporter';
 import Modal from '@/components/Modal';
 import ThemeDecor from '@/components/ThemeDecor';
 import { useDialog } from '@/components/useDialog';
+import { MaintenanceWatcher } from '@/components/MaintenanceNotice';
 import { ModeIcon, ImageIcon, AlbumsIcon, TrashIcon, ArrowLeftIcon, CheckIcon, RestoreIcon, DownloadIcon, MoveIcon, PlusIcon, SwitchIcon } from '@/components/Icons';
 
 const PHOTO_SORTS = [
@@ -174,6 +175,7 @@ export default function AlbumPage() {
         </button>
       </header>
 
+      <MaintenanceWatcher />
       <nav className="tabs">
         <button className={tab === 'photos' ? 'active' : ''} onClick={() => switchTab('photos')}><ImageIcon size={17} /> Photos</button>
         <button className={tab === 'albums' ? 'active' : ''} onClick={() => switchTab('albums')}><AlbumsIcon size={17} /> Albums</button>

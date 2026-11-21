@@ -1,6 +1,7 @@
 import bcrypt from 'bcryptjs';
 import { db, ok, fail, readJson, missingEnv, normEmail } from '@/lib/db';
 import { createSession, isSuperadminName } from '@/lib/auth';
+import { getMaintenance, maintenanceState } from '@/lib/maintenance';
 
 export async function POST(req) {
   const missing = missingEnv();
@@ -38,6 +39,10 @@ export async function POST(req) {
       return fail('Invalid email or password', 401);
     }
     if (!user.active) return fail('This account has been disabled', 403);
+
+    if (maintenanceState(await getMaintenance()) === 'active') {
+      return fail('ME-mory is under maintenance right now. Please try again once it is finished.', 503);
+    }
 
     const { count } = await db()
       .from('memberships')

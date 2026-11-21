@@ -38,6 +38,7 @@ export const ArrowLeftIcon = (p) => <Svg {...p}><path d="M19 12H5M11 6l-6 6 6 6"
 export const CheckIcon = (p) => <Svg {...p}><path d="M5 12.5l4.5 4.5L19 7.5" /></Svg>;
 export const CloseIcon = (p) => <Svg {...p}><path d="M6 6l12 12M18 6 6 18" /></Svg>;
 export const InboxIcon = (p) => <Svg {...p}><path d="M3 13.5 5.6 5.7A2.5 2.5 0 0 1 8 4h8a2.5 2.5 0 0 1 2.4 1.7L21 13.5V18a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" /><path d="M3 13.5h5l1.5 2.5h5l1.5-2.5h5" /></Svg>;
+export const WrenchIcon = (p) => <Svg {...p}><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z" /></Svg>;
 export const SwitchIcon = (p) => <Svg {...p}><path d="M8 9l4-4 4 4M8 15l4 4 4-4" /></Svg>;
 
 /** Icon for an album space's theme. */
