@@ -52,6 +52,11 @@ alter table users  enable row level security;
 alter table albums enable row level security;
 alter table photos enable row level security;
 
+-- Newer Supabase projects don't grant table access automatically.
+-- Give the server role access (anon/public visitors get nothing).
+grant usage on schema public to service_role;
+grant select, insert, update, delete on spaces, users, albums, photos to service_role;
+
 -- Private storage bucket for the photo files (50 MB per file max).
 insert into storage.buckets (id, name, public, file_size_limit)
 values ('photos', 'photos', false, 52428800)
