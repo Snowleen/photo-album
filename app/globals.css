@@ -538,3 +538,15 @@ a.btn { text-decoration: none; }
 .auth-top .top-btn.solid { background: #fff; color: var(--rose-dark); border-color: #fff; box-shadow: 0 6px 18px -6px rgba(120, 20, 60, 0.45); }
 .auth-top .top-btn.solid:hover { background: #fff5f8; }
 @media (max-width: 860px) { .auth-top { left: auto; right: 14px; top: 14px; } }
+
+/* Sort bar above photo / album grids */
+.list-bar { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-bottom: 10px; min-height: 36px; }
+.list-bar .select-info { margin: 0; }
+.sort-select { flex-direction: row; align-items: center; gap: 8px; font-weight: 600; font-size: 0.85rem; color: var(--muted); margin-left: auto; }
+.sort-select select {
+  width: auto; padding: 7px 32px 7px 12px; border-radius: 10px; font-size: 0.88rem; font-weight: 600; color: var(--text);
+  background: var(--surface) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23888' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E") no-repeat right 11px center;
+  appearance: none; -webkit-appearance: none; cursor: pointer;
+}
+@media (max-width: 420px) { .sort-select > span { display: none; } }
+.search-clear { top: 50%; transform: translateY(-50%); display: grid; place-items: center; }

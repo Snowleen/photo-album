@@ -8,6 +8,67 @@ import ThemeDecor from '@/components/ThemeDecor';
 import { useDialog } from '@/components/useDialog';
 import { ModeIcon, ImageIcon, AlbumsIcon, TrashIcon, ArrowLeftIcon, CheckIcon, RestoreIcon, DownloadIcon, MoveIcon, PlusIcon, SwitchIcon } from '@/components/Icons';
 
+const PHOTO_SORTS = [
+  { key: 'uploaded_desc', label: 'Newest uploaded' },
+  { key: 'uploaded_asc', label: 'Oldest uploaded' },
+  { key: 'taken_desc', label: 'Date taken (newest)' },
+  { key: 'taken_asc', label: 'Date taken (oldest)' },
+  { key: 'name_asc', label: 'Name (A–Z)' },
+  { key: 'name_desc', label: 'Name (Z–A)' },
+];
+const ALBUM_SORTS = [
+  { key: 'created_desc', label: 'Newest first' },
+  { key: 'created_asc', label: 'Oldest first' },
+  { key: 'name_asc', label: 'Name (A–Z)' },
+  { key: 'name_desc', label: 'Name (Z–A)' },
+];
+const byText = (a, b) => (a || '').localeCompare(b || '', undefined, { sensitivity: 'base', numeric: true });
+const takenDate = (p) => p.capture_date || (p.uploaded_at || '').slice(0, 10);
+
+function sortPhotos(list, key) {
+  const out = [...list];
+  const cmp = {
+    uploaded_desc: (a, b) => b.uploaded_at.localeCompare(a.uploaded_at),
+    uploaded_asc: (a, b) => a.uploaded_at.localeCompare(b.uploaded_at),
+    taken_desc: (a, b) => takenDate(b).localeCompare(takenDate(a)) || b.uploaded_at.localeCompare(a.uploaded_at),
+    taken_asc: (a, b) => takenDate(a).localeCompare(takenDate(b)) || a.uploaded_at.localeCompare(b.uploaded_at),
+    name_asc: (a, b) => byText(a.original_name, b.original_name),
+    name_desc: (a, b) => byText(b.original_name, a.original_name),
+  }[key];
+  return cmp ? out.sort(cmp) : out;
+}
+function sortAlbums(list, key) {
+  const out = [...list];
+  const cmp = {
+    created_desc: (a, b) => b.created_at.localeCompare(a.created_at),
+    created_asc: (a, b) => a.created_at.localeCompare(b.created_at),
+    name_asc: (a, b) => byText(a.name, b.name),
+    name_desc: (a, b) => byText(b.name, a.name),
+  }[key];
+  return cmp ? out.sort(cmp) : out;
+}
+
+/** Remembers a choice on this device. */
+function useStoredState(storageKey, initial) {
+  const [value, setValue] = useState(initial);
+  useEffect(() => {
+    try { const v = localStorage.getItem(storageKey); if (v) setValue(v); } catch {}
+  }, [storageKey]);
+  const set = (v) => { setValue(v); try { localStorage.setItem(storageKey, v); } catch {} };
+  return [value, set];
+}
+
+function SortSelect({ value, onChange, options }) {
+  return (
+    <label className="sort-select">
+      <span>Sort</span>
+      <select value={value} onChange={(e) => onChange(e.target.value)} aria-label="Sort">
+        {options.map((o) => <option key={o.key} value={o.key}>{o.label}</option>)}
+      </select>
+    </label>
+  );
+}
+
 const MODE_LABEL = { individual: 'Individual', couple: 'Couple', family: 'Family', pet: 'Pet' };
 
 export default function AlbumPage() {
@@ -17,6 +78,8 @@ export default function AlbumPage() {
   const [openAlbum, setOpenAlbum] = useState(null);
   const [photos, setPhotos] = useState(null);
   const [albums, setAlbums] = useState([]);
+  const [photoSort, setPhotoSort] = useStoredState('pa_photo_sort', 'uploaded_desc');
+  const [albumSort, setAlbumSort] = useStoredState('pa_album_sort', 'created_desc');
   const [selectMode, setSelectMode] = useState(false);
   const [selected, setSelected] = useState(new Set());
   const [detail, setDetail] = useState(null);
@@ -70,7 +133,10 @@ export default function AlbumPage() {
     s.has(id) ? s.delete(id) : s.add(id);
     setSelected(s);
   }
-  const selectedPhotos = useMemo(() => (photos || []).filter((p) => selected.has(p.id)), [photos, selected]);
+  const sortedPhotos = useMemo(() => sortPhotos(photos || [], photoSort), [photos, photoSort]);
+  const sortedAlbums = useMemo(() => sortAlbums(albums, albumSort), [albums, albumSort]);
+  // keep the on-screen order for exports (e.g. PDF page order)
+  const selectedPhotos = useMemo(() => sortedPhotos.filter((p) => selected.has(p.id)), [sortedPhotos, selected]);
 
   async function bulk(action, extra = {}) {
     try {
@@ -157,8 +223,13 @@ export default function AlbumPage() {
         {/* Albums list */}
         {tab === 'albums' && !openAlbum && (
           albums.length === 0 ? <p className="muted empty">No albums yet. Create one to organise your photos.</p> : (
+            <>
+            <div className="list-bar">
+              <span className="muted small">{albums.length} album{albums.length === 1 ? '' : 's'}</span>
+              <SortSelect value={albumSort} onChange={setAlbumSort} options={ALBUM_SORTS} />
+            </div>
             <div className="album-grid">
-              {albums.map((a) => (
+              {sortedAlbums.map((a) => (
                 <button key={a.id} className="album-card" onClick={() => setOpenAlbum(a)}>
                   <div className="album-cover">{a.cover ? <img src={a.cover} alt="" loading="lazy" /> : <ModeIcon mode={mode} size={34} />}</div>
                   <div className="album-name">{a.name}</div>
@@ -166,6 +237,7 @@ export default function AlbumPage() {
                 </button>
               ))}
             </div>
+            </>
           )
         )}
 
@@ -174,16 +246,21 @@ export default function AlbumPage() {
           !photos ? <p className="muted">Loading…</p> :
           photos.length === 0 ? <p className="muted empty">{inBin ? 'Recycle bin is empty.' : 'No photos yet. Tap “Upload” to add some!'}</p> : (
             <>
-              {selectMode && (
-                <div className="row gap select-info">
-                  <span>{selected.size} selected</span>
-                  <button className="link" onClick={() => setSelected(new Set(selected.size === photos.length ? [] : photos.map((p) => p.id)))}>
-                    {selected.size === photos.length ? 'Clear all' : 'Select all'}
-                  </button>
-                </div>
-              )}
+              <div className="list-bar">
+                {selectMode ? (
+                  <div className="row gap select-info">
+                    <span>{selected.size} selected</span>
+                    <button className="link" onClick={() => setSelected(new Set(selected.size === photos.length ? [] : photos.map((p) => p.id)))}>
+                      {selected.size === photos.length ? 'Clear all' : 'Select all'}
+                    </button>
+                  </div>
+                ) : (
+                  <span className="muted small">{photos.length} photo{photos.length === 1 ? '' : 's'}</span>
+                )}
+                <SortSelect value={photoSort} onChange={setPhotoSort} options={PHOTO_SORTS} />
+              </div>
               <div className="photo-grid">
-                {photos.map((p) => (
+                {sortedPhotos.map((p) => (
                   <button
                     key={p.id}
                     className={`photo-tile ${selected.has(p.id) ? 'selected' : ''}`}

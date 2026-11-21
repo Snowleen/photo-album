@@ -25,6 +25,16 @@ function filterUsers(users, query) {
   );
 }
 
+/** Matches space name, theme, or any member's name / email. */
+function filterSpaces(spaces, query) {
+  const q = query.trim().toLowerCase();
+  if (!q) return spaces;
+  return spaces.filter((s) =>
+    [s.name, s.mode, MODES[s.mode]?.label, ...s.users.flatMap((u) => [u.display_name, u.email, u.username])]
+      .some((v) => (v || '').toLowerCase().includes(q))
+  );
+}
+
 function SearchBox({ value, onChange, placeholder, autoFocus }) {
   return (
     <div className="search-box">
@@ -47,6 +57,7 @@ export default function AdminPage() {
   const [toast, setToast] = useState('');
   const [tab, setTab] = useState('spaces'); // spaces | logins
   const [loginQuery, setLoginQuery] = useState('');
+  const [spaceQuery, setSpaceQuery] = useState('');
 
   // Remember the last tab on this device.
   useEffect(() => {
@@ -169,9 +180,11 @@ export default function AdminPage() {
         </div>
         {!spaces && <p className="muted">Loading…</p>}
         {spaces?.length === 0 && <p className="muted empty">No spaces yet. Create one for a person, couple, family or pet.</p>}
+        {spaces?.length > 0 && <SearchBox value={spaceQuery} onChange={setSpaceQuery} placeholder="Search spaces by name, theme or member…" />}
+        {spaces?.length > 0 && filterSpaces(spaces, spaceQuery).length === 0 && <p className="muted empty">No spaces match “{spaceQuery}”.</p>}
 
         <div className="space-list">
-          {spaces?.map((s) => {
+          {filterSpaces(spaces || [], spaceQuery).map((s) => {
             const m = MODES[s.mode] || MODES.individual;
             const full = s.users.length >= m.limit;
             return (
