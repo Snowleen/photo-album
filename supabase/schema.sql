@@ -66,6 +66,18 @@ create table if not exists photos (
   deleted_at timestamptz
 );
 
+-- Album cover (added after photos exists because it points at a photo)
+alter table albums add column if not exists cover_photo_id uuid references photos(id) on delete set null;
+alter table albums add column if not exists cover_crop jsonb;
+
+create table if not exists signup_requests (
+  id uuid primary key default gen_random_uuid(),
+  email text not null unique,
+  display_name text not null,
+  note text,
+  created_at timestamptz not null default now()
+);
+
 create index if not exists photos_space_idx on photos(space_id, deleted_at, uploaded_at desc);
 create index if not exists photos_album_idx on photos(album_id);
 create index if not exists memberships_space_idx on memberships(space_id);
@@ -80,10 +92,11 @@ alter table albums      enable row level security;
 alter table photos      enable row level security;
 alter table auth_tokens enable row level security;
 alter table settings    enable row level security;
+alter table signup_requests enable row level security;
 
 -- Newer Supabase projects don't grant table access automatically.
 grant usage on schema public to service_role;
-grant select, insert, update, delete on spaces, users, memberships, albums, photos, auth_tokens, settings to service_role;
+grant select, insert, update, delete on spaces, users, memberships, albums, photos, auth_tokens, settings, signup_requests to service_role;
 
 -- Private storage bucket for the photo files (50 MB per file max).
 insert into storage.buckets (id, name, public, file_size_limit)

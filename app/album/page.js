@@ -7,6 +7,7 @@ import Modal from '@/components/Modal';
 import ThemeDecor from '@/components/ThemeDecor';
 import { useDialog } from '@/components/useDialog';
 import { MaintenanceWatcher } from '@/components/MaintenanceNotice';
+import CoverCropper, { AlbumCover } from '@/components/CoverCropper';
 import { ModeIcon, ImageIcon, AlbumsIcon, TrashIcon, ArrowLeftIcon, CheckIcon, RestoreIcon, DownloadIcon, MoveIcon, PlusIcon, SwitchIcon } from '@/components/Icons';
 
 const PHOTO_SORTS = [
@@ -208,7 +209,7 @@ export default function AlbumPage() {
             )}
             {showGrid && photos?.length > 0 && (
               <button className="btn small" onClick={() => (selectMode ? exitSelect() : setSelectMode(true))}>
-                {selectMode ? 'Cancel' : 'Select'}
+                {selectMode ? 'Cancel' : inBin ? 'Select' : 'Batch export'}
               </button>
             )}
             {inBin && !selectMode && photos?.length > 0 && (
@@ -233,7 +234,7 @@ export default function AlbumPage() {
             <div className="album-grid">
               {sortedAlbums.map((a) => (
                 <button key={a.id} className="album-card" onClick={() => setOpenAlbum(a)}>
-                  <div className="album-cover">{a.cover ? <img src={a.cover} alt="" loading="lazy" /> : <ModeIcon mode={mode} size={34} />}</div>
+                  <div className="album-cover">{a.cover ? <AlbumCover src={a.cover} crop={a.cover_crop} /> : <ModeIcon mode={mode} size={34} />}</div>
                   <div className="album-name">{a.name}</div>
                   <div className="muted small">{a.count} photo{a.count === 1 ? '' : 's'}</div>
                 </button>
@@ -319,6 +320,8 @@ export default function AlbumPage() {
           onChanged={(msg) => { setDetail(null); if (msg) notify(msg); refresh(); }}
           onError={handleErr}
           ask={ask}
+          notify={notify}
+          onCoverChanged={loadAlbums}
         />
       )}
       {exportList && (
@@ -445,11 +448,35 @@ function UploadModal({ albums, defaultAlbum, onClose, onDone }) {
   );
 }
 
-function PhotoModal({ photo, albums, inBin, onClose, onExport, onChanged, onError, ask }) {
+function PhotoModal({ photo, albums, inBin, onClose, onExport, onChanged, onError, ask, notify, onCoverChanged }) {
   const [captureDate, setCaptureDate] = useState(photo.capture_date || '');
   const [remark, setRemark] = useState(photo.remark || '');
   const [albumId, setAlbumId] = useState(photo.album_id || '');
   const [busy, setBusy] = useState(false);
+  const [cropping, setCropping] = useState(false);
+  const [coverBusy, setCoverBusy] = useState(false);
+  const album = albums.find((a) => a.id === photo.album_id);
+  const isCover = !!album && album.cover_photo_id === photo.id;
+
+  async function saveCover(crop) {
+    setCoverBusy(true);
+    try {
+      await api(`/api/albums/${album.id}`, { method: 'PATCH', body: { cover_photo_id: photo.id, cover_crop: crop } });
+      await onCoverChanged();
+      setCropping(false);
+      notify(`Cover set for “${album.name}”`);
+    } catch (e) { onError(e); }
+    setCoverBusy(false);
+  }
+  async function clearCover() {
+    setCoverBusy(true);
+    try {
+      await api(`/api/albums/${album.id}`, { method: 'PATCH', body: { cover_photo_id: null } });
+      await onCoverChanged();
+      notify('Album cover set back to automatic');
+    } catch (e) { onError(e); }
+    setCoverBusy(false);
+  }
 
   async function act(fn, msg) {
     setBusy(true);
@@ -480,6 +507,21 @@ function PhotoModal({ photo, albums, inBin, onClose, onExport, onChanged, onErro
               </label>
               <label>Remark<textarea rows={3} value={remark} onChange={(e) => setRemark(e.target.value)} /></label>
               <label>Album<AlbumSelect albums={albums} value={albumId} onChange={setAlbumId} /></label>
+              {album && (
+                <div className="cover-toggle">
+                  <label className="check-row">
+                    <input
+                      type="checkbox"
+                      checked={isCover}
+                      disabled={coverBusy}
+                      onChange={(e) => (e.target.checked ? setCropping(true) : clearCover())}
+                    />
+                    <span className="box" aria-hidden><CheckIcon size={13} /></span>
+                    <span>Use as cover of <b>{album.name}</b></span>
+                  </label>
+                  {isCover && <button type="button" className="link small" onClick={() => setCropping(true)}>Adjust</button>}
+                </div>
+              )}
               <button className="btn primary block" disabled={busy} onClick={() => act(() => api(`/api/photos/${photo.id}`, {
                 method: 'PATCH', body: { capture_date: captureDate || null, remark, album_id: albumId || null },
               }), 'Saved')}>Save changes</button>
@@ -491,6 +533,16 @@ function PhotoModal({ photo, albums, inBin, onClose, onExport, onChanged, onErro
           )}
         </div>
       </div>
+      {cropping && album && (
+        <CoverCropper
+          src={photo.url}
+          albumName={album.name}
+          initialCrop={isCover ? album.cover_crop : null}
+          busy={coverBusy}
+          onCancel={() => setCropping(false)}
+          onDone={saveCover}
+        />
+      )}
     </Modal>
   );
 }
