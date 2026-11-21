@@ -25,6 +25,7 @@ export default function AlbumPage() {
   const [showMove, setShowMove] = useState(false);
   const [toast, setToast] = useState('');
   const [showSwitch, setShowSwitch] = useState(false);
+  const [showProfile, setShowProfile] = useState(false);
   const [dialog, ask] = useDialog();
 
   const notify = (m) => { setToast(m); setTimeout(() => setToast(''), 2800); };
@@ -101,10 +102,10 @@ export default function AlbumPage() {
           <span>{THEME_ICON[mode]} {me.space.name}</span>
           {me.spaces.length > 1 && <span className="caret">⇅</span>}
         </button>
-        <div className="row gap">
-          <span className="muted small hide-sm">Hi, {me.user.display_name}</span>
-          <button className="btn ghost" onClick={logout}>Log out</button>
-        </div>
+        <button className="profile-btn" onClick={() => setShowProfile(true)} title="My profile">
+          <span className="hide-sm">{me.user.display_name}</span>
+          <span className="avatar sm">{(me.user.display_name || '?').slice(0, 1).toUpperCase()}</span>
+        </button>
       </header>
 
       <nav className="tabs">
@@ -283,6 +284,14 @@ export default function AlbumPage() {
           </div>
         </Modal>
       )}
+      {showProfile && (
+        <ProfileModal
+          user={me.user}
+          onClose={() => setShowProfile(false)}
+          onSaved={(display_name) => { setMe({ ...me, user: { ...me.user, display_name } }); notify('Profile saved'); }}
+          onLogout={logout}
+        />
+      )}
       {dialog}
       {toast && <div className="toast">{toast}</div>}
     </div>
@@ -446,6 +455,67 @@ function ExportModal({ photos, title, onClose, onDone }) {
         })}
         {error && <p className="error">{error}</p>}
         <button className="btn primary block" disabled={busy} onClick={go}>{busy ? 'Preparing…' : `Save as ${fmt.toUpperCase()}`}</button>
+      </div>
+    </Modal>
+  );
+}
+
+function ProfileModal({ user, onClose, onSaved, onLogout }) {
+  const [nickname, setNickname] = useState(user.display_name || '');
+  const [current, setCurrent] = useState('');
+  const [next, setNext] = useState('');
+  const [msg, setMsg] = useState(null);
+  const [busy, setBusy] = useState(false);
+
+  async function saveNick(e) {
+    e.preventDefault();
+    setBusy(true); setMsg(null);
+    try {
+      await api('/api/auth/profile', { method: 'PATCH', body: { display_name: nickname } });
+      onSaved(nickname.trim());
+      setMsg({ ok: true, text: 'Nickname saved ✓' });
+    } catch (err) { setMsg({ ok: false, text: err.message }); }
+    setBusy(false);
+  }
+  async function savePw(e) {
+    e.preventDefault();
+    setBusy(true); setMsg(null);
+    try {
+      await api('/api/auth/profile', { method: 'PATCH', body: { current_password: current, new_password: next } });
+      setCurrent(''); setNext('');
+      setMsg({ ok: true, text: 'Password changed ✓' });
+    } catch (err) { setMsg({ ok: false, text: err.message }); }
+    setBusy(false);
+  }
+
+  return (
+    <Modal title="My profile" onClose={onClose}>
+      <div className="stack">
+        <div className="profile-head">
+          <span className="avatar lg">{(nickname || '?').slice(0, 1).toUpperCase()}</span>
+          <div className="min0">
+            <strong>{user.display_name}</strong>
+            <div className="muted small ellipsis">{user.email}</div>
+          </div>
+        </div>
+        <form className="form" onSubmit={saveNick}>
+          <label>Nickname <span className="muted small">(shown to others in your albums)</span>
+            <div className="copy-box">
+              <input value={nickname} onChange={(e) => setNickname(e.target.value)} maxLength={40} required />
+              <button className="btn primary" disabled={busy || !nickname.trim() || nickname.trim() === user.display_name}>Save</button>
+            </div>
+          </label>
+        </form>
+        <div className="divider" />
+        <form className="form" onSubmit={savePw}>
+          <strong>Change password</strong>
+          <input type="password" value={current} onChange={(e) => setCurrent(e.target.value)} placeholder="Current password" autoComplete="current-password" />
+          <input type="password" value={next} onChange={(e) => setNext(e.target.value)} placeholder="New password (at least 8 characters)" autoComplete="new-password" />
+          <button className="btn block" disabled={busy || !current || next.length < 8}>Change password</button>
+        </form>
+        {msg && <div className={msg.ok ? 'note-ok' : 'note-err'}>{msg.text}</div>}
+        <div className="divider" />
+        <button className="btn danger block" onClick={onLogout}>Log out</button>
       </div>
     </Modal>
   );

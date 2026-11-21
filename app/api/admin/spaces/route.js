@@ -8,7 +8,7 @@ export async function GET() {
   const { data, error } = await db()
     .from('spaces')
     .select(
-      'id, name, mode, created_at, members:memberships(created_at, user:users(id, username, display_name, active)), photos:photos!photos_space_id_fkey(count)'
+      'id, name, mode, created_at, members:memberships(created_at, user:users(id, email, username, display_name, active, password_hash)), photos:photos!photos_space_id_fkey(count)'
     )
     .order('created_at', { ascending: false });
   if (error) return fail(error.message, 500);
@@ -18,7 +18,8 @@ export async function GET() {
       users: [...(members || [])]
         .sort((a, b) => a.created_at.localeCompare(b.created_at))
         .map((m) => m.user)
-        .filter(Boolean),
+        .filter(Boolean)
+        .map(({ password_hash, ...u }) => ({ ...u, pending: !password_hash })),
       photo_count: photos?.[0]?.count ?? 0,
     })),
   });

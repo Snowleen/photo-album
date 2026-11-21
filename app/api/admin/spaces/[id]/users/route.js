@@ -1,10 +1,10 @@
 import bcrypt from 'bcryptjs';
-import { db, ok, fail, readJson, MODE_LIMITS } from '@/lib/db';
+import { db, ok, fail, readJson, MODE_LIMITS, EMAIL_RE, normEmail } from '@/lib/db';
 import { requireAdmin, isSuperadminName } from '@/lib/auth';
 
 // Add a member to a space.
-//   { user_id }                             -> add an existing login
-//   { username, password, display_name }    -> create a new login and add it
+//   { user_id }                          -> add an existing login
+//   { email, password, display_name? }   -> create a new login and add it
 export async function POST(req, { params }) {
   if (!(await requireAdmin())) return fail('Unauthorized', 401);
   const body = await readJson(req);
@@ -14,7 +14,7 @@ export async function POST(req, { params }) {
 
   const { count } = await db().from('memberships').select('user_id', { count: 'exact', head: true }).eq('space_id', space.id);
   const limit = MODE_LIMITS[space.mode];
-  if ((count || 0) >= limit) return fail(`${space.mode} mode allows maximum ${limit} user${limit > 1 ? 's' : ''}`);
+  if ((count || 0) >= limit) return fail(`${space.mode} mode allows maximum ${limit} member${limit > 1 ? 's' : ''}`);
 
   let userId = body.user_id;
   if (userId) {
@@ -23,19 +23,19 @@ export async function POST(req, { params }) {
     const { data: m } = await db().from('memberships').select('user_id').eq('user_id', userId).eq('space_id', space.id).maybeSingle();
     if (m) return fail('This login is already in this space');
   } else {
-    const uname = String(body.username || '').trim().toLowerCase();
+    const email = normEmail(body.email);
     const password = String(body.password || '');
-    if (!/^[a-z0-9._-]{3,32}$/.test(uname)) return fail('Username: 3-32 characters, letters/numbers/._- only');
-    if (isSuperadminName(uname)) return fail('That username is reserved');
+    if (!EMAIL_RE.test(email)) return fail('Please enter a valid email address');
+    if (isSuperadminName(email)) return fail('That name is reserved');
     if (password.length < 6) return fail('Password must be at least 6 characters');
-    const { data: exists } = await db().from('users').select('id').eq('username', uname).maybeSingle();
-    if (exists) return fail('Username already taken — use "Existing login" to add it to this space');
+    const { data: exists } = await db().from('users').select('id').eq('email', email).maybeSingle();
+    if (exists) return fail('This email already has a login — use the "Existing login" tab to add it to this space');
 
     const { data: created, error } = await db()
       .from('users')
       .insert({
-        username: uname,
-        display_name: String(body.display_name || '').trim() || uname,
+        email,
+        display_name: String(body.display_name || '').trim().slice(0, 40) || email.split('@')[0],
         password_hash: await bcrypt.hash(password, 10),
       })
       .select('id')

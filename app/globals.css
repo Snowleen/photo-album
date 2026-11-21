@@ -413,3 +413,32 @@ input:focus, textarea:focus, select:focus { outline: 2px solid color-mix(in srgb
 .avatar { width: 38px; height: 38px; border-radius: 50%; display: grid; place-items: center; font-weight: 700; background: var(--primary); color: #fff; flex: none; }
 .radio { width: 20px; height: 20px; border-radius: 50%; border: 2px solid #d5c8ce; flex: none; }
 .pick.active .radio { border: 6px solid var(--primary); }
+
+/* ---------- Email login & profile ---------- */
+.label-row { display: flex; justify-content: space-between; align-items: baseline; }
+.text-link { background: none; border: none; padding: 0; color: var(--rose, var(--primary)); font-weight: 600; font-size: 0.85rem; cursor: pointer; }
+.text-link:hover { text-decoration: underline; }
+.text-link.center { align-self: center; margin-top: 2px; }
+.auth-info { background: #f0fdf4; border: 1px solid #bbf7d0; color: #166534; padding: 10px 12px; border-radius: 10px; font-size: 0.88rem; line-height: 1.45; }
+.auth-submit.as-link { text-decoration: none; }
+.center-box { align-items: center; justify-content: center; min-height: 200px; }
+.spinner.dark { border-color: rgba(224, 82, 127, 0.25); border-top-color: #e0527f; }
+
+.banner { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; background: #fff7ed; border: 1px solid #fed7aa; color: #7c3d12; padding: 12px 16px; border-radius: 14px; margin-bottom: 18px; }
+.banner.soft { margin: 0; }
+.copy-box { display: flex; gap: 8px; }
+.copy-box input { flex: 1; min-width: 0; }
+.hint { font-weight: 400; font-size: 0.78rem; color: var(--muted); line-height: 1.45; }
+.hint code { background: #f6eef2; padding: 1px 5px; border-radius: 5px; font-size: 0.76rem; word-break: break-all; }
+.divider { height: 1px; background: var(--border); margin: 6px 0; }
+.note-ok { background: #f0fdf4; color: #166534; border: 1px solid #bbf7d0; padding: 9px 12px; border-radius: 10px; font-size: 0.88rem; }
+.note-err { background: #fff1f2; color: #be123c; border: 1px solid #fecdd3; padding: 9px 12px; border-radius: 10px; font-size: 0.88rem; }
+.min0 { min-width: 0; }
+.ellipsis { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.profile-btn { display: flex; align-items: center; gap: 10px; background: none; border: 1px solid var(--border); padding: 4px 4px 4px 12px; border-radius: 999px; cursor: pointer; font-weight: 600; color: var(--text); }
+.profile-btn:hover { background: var(--accent-soft); }
+.avatar.sm { width: 32px; height: 32px; font-size: 0.9rem; }
+.avatar.lg { width: 52px; height: 52px; font-size: 1.3rem; }
+.profile-head { display: flex; align-items: center; gap: 14px; }
+@media (max-width: 560px) { .profile-btn { padding: 3px; border: none; } }

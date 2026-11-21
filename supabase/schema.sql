@@ -1,5 +1,5 @@
 -- Fresh install: run this once in Supabase: SQL Editor -> New query -> paste -> Run
--- (Already installed the earlier version? Run migration-002-multi-space.sql instead.)
+-- (Already installed an earlier version? Run the migration-00x files you haven't run yet instead.)
 
 create extension if not exists pgcrypto;
 
@@ -14,8 +14,9 @@ create table if not exists spaces (
 -- Logins. A login can be a member of several spaces (see memberships).
 create table if not exists users (
   id uuid primary key default gen_random_uuid(),
-  username text not null unique,
-  password_hash text not null,
+  email text unique,
+  username text unique,              -- legacy, unused
+  password_hash text,                -- null until the invitation is accepted
   display_name text not null,
   active boolean not null default true,
   created_at timestamptz not null default now()
@@ -26,6 +27,21 @@ create table if not exists memberships (
   space_id uuid not null references spaces(id) on delete cascade,
   created_at timestamptz not null default now(),
   primary key (user_id, space_id)
+);
+
+create table if not exists auth_tokens (
+  token_hash text primary key,
+  user_id uuid not null references users(id) on delete cascade,
+  kind text not null check (kind in ('invite', 'reset')),
+  expires_at timestamptz not null,
+  used_at timestamptz,
+  created_at timestamptz not null default now()
+);
+
+create table if not exists settings (
+  key text primary key,
+  value text,
+  updated_at timestamptz not null default now()
 );
 
 create table if not exists albums (
@@ -54,6 +70,7 @@ create index if not exists photos_space_idx on photos(space_id, deleted_at, uplo
 create index if not exists photos_album_idx on photos(album_id);
 create index if not exists memberships_space_idx on memberships(space_id);
 create index if not exists albums_space_idx on albums(space_id);
+create index if not exists auth_tokens_user_idx on auth_tokens(user_id);
 
 -- Lock tables: only the server (service role key) can read/write them.
 alter table spaces      enable row level security;
@@ -61,10 +78,12 @@ alter table users       enable row level security;
 alter table memberships enable row level security;
 alter table albums      enable row level security;
 alter table photos      enable row level security;
+alter table auth_tokens enable row level security;
+alter table settings    enable row level security;
 
 -- Newer Supabase projects don't grant table access automatically.
 grant usage on schema public to service_role;
-grant select, insert, update, delete on spaces, users, memberships, albums, photos to service_role;
+grant select, insert, update, delete on spaces, users, memberships, albums, photos, auth_tokens, settings to service_role;
 
 -- Private storage bucket for the photo files (50 MB per file max).
 insert into storage.buckets (id, name, public, file_size_limit)

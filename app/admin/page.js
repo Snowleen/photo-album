@@ -13,15 +13,20 @@ const MODES = {
   pet: { label: 'Pet', icon: '🐾', limit: 10 },
 };
 
+const who = (u) => u.email || (u.username ? `@${u.username}` : '');
+
 export default function AdminPage() {
   const router = useRouter();
   const [spaces, setSpaces] = useState(null);
   const [users, setUsers] = useState([]);
   const [error, setError] = useState('');
+  const [toast, setToast] = useState('');
   const [showNew, setShowNew] = useState(false);
   const [addUserTo, setAddUserTo] = useState(null);
   const [resetUser, setResetUser] = useState(null);
   const [dialog, ask] = useDialog();
+
+  const notify = (m) => { setToast(m); setTimeout(() => setToast(''), 3500); };
 
   const load = useCallback(async () => {
     try {
@@ -70,19 +75,31 @@ export default function AdminPage() {
   }
   async function deleteAccount(u) {
     const yes = await ask.confirm({
-      title: `Delete login @${u.username}?`,
+      title: `Delete login ${who(u)}?`,
       message: 'This removes the login from every space. Photos they uploaded stay in the spaces.',
       confirmText: 'Delete login',
       danger: true,
     });
     if (yes) run(() => api(`/api/admin/users/${u.id}`, { method: 'DELETE' }));
   }
+  async function addEmail(u) {
+    const email = await ask.prompt({
+      title: `Add email for ${u.display_name}`,
+      message: 'Logins now use email. After saving, they sign in with this email and their current password.',
+      label: 'Email address',
+      placeholder: 'name@example.com',
+      confirmText: 'Save email',
+    });
+    if (email) run(() => api(`/api/admin/users/${u.id}`, { method: 'PATCH', body: { email } }));
+  }
 
   return (
     <div className="app" data-theme="admin">
       <header className="topbar">
-        <div className="brand row gap"><span className="admin-logo"><Logo size={28} /></span> Photo Album <span className="badge">Superadmin</span></div>
-        <button className="btn ghost" onClick={logout}>Log out</button>
+        <div className="brand row gap"><span className="admin-logo"><Logo size={28} /></span> <span className="hide-sm">Photo Album</span> <span className="badge">Superadmin</span></div>
+        <div className="row gap">
+          <button className="btn ghost small" onClick={logout}>Log out</button>
+        </div>
       </header>
 
       <main className="container">
@@ -133,9 +150,9 @@ export default function AdminPage() {
                   {s.users.length === 0 && <p className="muted small">No members yet.</p>}
                   {s.users.map((u) => (
                     <div key={u.id} className={`user-row ${u.active ? '' : 'disabled'}`}>
-                      <div>
-                        <div>{u.display_name}</div>
-                        <div className="muted small">@{u.username}{!u.active && ' · disabled'}</div>
+                      <div className="min0">
+                        <div className="row gap wrap">{u.display_name}</div>
+                        <div className="muted small ellipsis">{who(u)}{!u.active && ' · disabled'}</div>
                       </div>
                       <button className="btn small danger" onClick={() => removeMember(s, u)}>Remove</button>
                     </div>
@@ -150,27 +167,34 @@ export default function AdminPage() {
           <h2>Logins</h2>
           <span className="muted small">{users.length} total</span>
         </div>
-        {users.length === 0 && <p className="muted small">No logins yet. Add a member to a space to create one.</p>}
-        <div className="card accounts">
-          {users.map((u) => (
-            <div key={u.id} className={`account-row ${u.active ? '' : 'disabled'}`}>
-              <div className="account-info">
-                <div><strong>{u.display_name}</strong> <span className="muted small">@{u.username}{!u.active && ' · disabled'}</span></div>
-                <div className="tags">
-                  {u.spaces.length === 0 && <span className="tag warn">Not in any space</span>}
-                  {u.spaces.map((sp) => <span key={sp.id} className="tag">{MODES[sp.mode]?.icon} {sp.name}</span>)}
+        {users.length === 0 && <p className="muted small">No logins yet. Invite a member to a space to create one.</p>}
+        {users.length > 0 && (
+          <div className="card accounts">
+            {users.map((u) => (
+              <div key={u.id} className={`account-row ${u.active ? '' : 'disabled'}`}>
+                <div className="account-info">
+                  <div className="ellipsis"><strong>{u.display_name}</strong> <span className="muted small">{who(u)}{!u.active && ' · disabled'}</span></div>
+                  <div className="tags">
+                    {!u.email && <span className="tag warn">No email</span>}
+                    {u.spaces.length === 0 && <span className="tag warn">Not in any space</span>}
+                    {u.spaces.map((sp) => <span key={sp.id} className="tag">{MODES[sp.mode]?.icon} {sp.name}</span>)}
+                  </div>
+                </div>
+                <div className="row gap wrap">
+                  {!u.email ? (
+                    <button className="btn small primary" onClick={() => addEmail(u)}>Add email</button>
+                  ) : (
+                    <button className="btn small" onClick={() => setResetUser(u)}>Reset password</button>
+                  )}
+                  <button className="btn small" onClick={() => run(() => api(`/api/admin/users/${u.id}`, { method: 'PATCH', body: { active: !u.active } }))}>
+                    {u.active ? 'Disable' : 'Enable'}
+                  </button>
+                  <button className="btn small danger" onClick={() => deleteAccount(u)}>Delete</button>
                 </div>
               </div>
-              <div className="row gap wrap">
-                <button className="btn small" onClick={() => setResetUser(u)}>Reset password</button>
-                <button className="btn small" onClick={() => run(() => api(`/api/admin/users/${u.id}`, { method: 'PATCH', body: { active: !u.active } }))}>
-                  {u.active ? 'Disable' : 'Enable'}
-                </button>
-                <button className="btn small danger" onClick={() => deleteAccount(u)}>Delete</button>
-              </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
       </main>
 
       {showNew && <NewSpaceModal onClose={() => setShowNew(false)} onDone={() => { setShowNew(false); load(); }} />}
@@ -179,11 +203,12 @@ export default function AdminPage() {
           space={addUserTo}
           users={users.filter((u) => !addUserTo.users.some((m) => m.id === u.id))}
           onClose={() => setAddUserTo(null)}
-          onDone={() => { setAddUserTo(null); load(); }}
+          onDone={() => { setAddUserTo(null); load(); notify('Member added ✓'); }}
         />
       )}
       {resetUser && <ResetModal user={resetUser} onClose={() => setResetUser(null)} />}
       {dialog}
+      {toast && <div className="toast">{toast}</div>}
     </div>
   );
 }
@@ -221,38 +246,51 @@ function NewSpaceModal({ onClose, onDone }) {
 }
 
 function AddMemberModal({ space, users, onClose, onDone }) {
-  const [tab, setTab] = useState(users.length ? 'existing' : 'new');
+  const [tab, setTab] = useState('email');
   const [userId, setUserId] = useState('');
-  const [f, setF] = useState({ display_name: '', username: '', password: '' });
+  const [email, setEmail] = useState('');
+  const [name, setName] = useState('');
+  const [password, setPassword] = useState('');
   const [error, setError] = useState('');
-  const set = (k) => (e) => setF({ ...f, [k]: e.target.value });
+  const [busy, setBusy] = useState(false);
 
   async function submit(e) {
     e.preventDefault();
     setError('');
+    setBusy(true);
     try {
-      const body = tab === 'existing' ? { user_id: userId } : f;
+      const body = tab === 'existing' ? { user_id: userId } : { email, display_name: name, password };
       await api(`/api/admin/spaces/${space.id}/users`, { method: 'POST', body });
       onDone();
-    } catch (err) { setError(err.message); }
+    } catch (err) {
+      setError(err.message);
+      setBusy(false);
+    }
   }
 
   return (
     <Modal title={`Add member to ${space.name}`} onClose={onClose}>
       <div className="seg">
+        <button type="button" className={tab === 'email' ? 'active' : ''} onClick={() => setTab('email')}>New login</button>
         <button type="button" className={tab === 'existing' ? 'active' : ''} onClick={() => setTab('existing')} disabled={!users.length}>Existing login</button>
-        <button type="button" className={tab === 'new' ? 'active' : ''} onClick={() => setTab('new')}>New login</button>
       </div>
       <form onSubmit={submit} className="form">
-        {tab === 'existing' ? (
+        {tab === 'email' ? (
+          <>
+            <label>Email<input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="name@example.com" autoCapitalize="none" required autoFocus /></label>
+            <label>Nickname <span className="muted small">(they can change it later)</span><input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Shirleen" maxLength={40} /></label>
+            <label>Password<input value={password} onChange={(e) => setPassword(e.target.value)} minLength={6} placeholder="At least 6 characters" required /></label>
+            <p className="muted small">Share the email and password with them — they can change the password after signing in.</p>
+          </>
+        ) : (
           <>
             <p className="muted small">Give someone who already has a login access to this space too. They can switch between their spaces after signing in.</p>
             <div className="pick-list">
               {users.map((u) => (
                 <button type="button" key={u.id} className={`pick ${userId === u.id ? 'active' : ''}`} onClick={() => setUserId(u.id)}>
                   <span className="avatar">{u.display_name.slice(0, 1).toUpperCase()}</span>
-                  <span className="grow">
-                    <strong>{u.display_name}</strong> <span className="muted small">@{u.username}</span>
+                  <span className="grow min0">
+                    <strong>{u.display_name}</strong> <span className="muted small">{who(u)}</span>
                     <span className="muted small block-line">{u.spaces.map((s) => s.name).join(', ') || 'Not in any space'}</span>
                   </span>
                   <span className="radio" />
@@ -260,15 +298,11 @@ function AddMemberModal({ space, users, onClose, onDone }) {
               ))}
             </div>
           </>
-        ) : (
-          <>
-            <label>Display name<input value={f.display_name} onChange={set('display_name')} placeholder="e.g. Shirleen" required /></label>
-            <label>Username (for login)<input value={f.username} onChange={set('username')} autoCapitalize="none" required /></label>
-            <label>Password<input value={f.password} onChange={set('password')} minLength={6} required /></label>
-          </>
         )}
         {error && <p className="error">{error}</p>}
-        <button className="btn primary block" disabled={tab === 'existing' && !userId}>Add to space</button>
+        <button className="btn primary block" disabled={busy || (tab === 'existing' ? !userId : !email || password.length < 6)}>
+          {busy ? 'Adding…' : 'Add to space'}
+        </button>
       </form>
     </Modal>
   );
@@ -276,21 +310,21 @@ function AddMemberModal({ space, users, onClose, onDone }) {
 
 function ResetModal({ user, onClose }) {
   const [password, setPassword] = useState('');
-  const [msg, setMsg] = useState('');
+  const [msg, setMsg] = useState(null);
   async function submit(e) {
     e.preventDefault();
     try {
       await api(`/api/admin/users/${user.id}`, { method: 'PATCH', body: { password } });
-      setMsg('Password updated ✓');
+      setMsg({ ok: true, text: 'Password updated ✓ — share the new password with them.' });
       setPassword('');
-    } catch (err) { setMsg(err.message); }
+    } catch (err) { setMsg({ ok: false, text: err.message }); }
   }
   return (
-    <Modal title={`Reset password · @${user.username}`} onClose={onClose}>
+    <Modal title={`Reset password · ${who(user)}`} onClose={onClose}>
       <form onSubmit={submit} className="form">
         <label>New password<input value={password} onChange={(e) => setPassword(e.target.value)} minLength={6} required autoFocus /></label>
-        {msg && <p className="muted">{msg}</p>}
-        <button className="btn primary block">Save</button>
+        {msg && <div className={msg.ok ? 'note-ok' : 'note-err'}>{msg.text}</div>}
+        <button className="btn primary block" disabled={password.length < 6}>Save</button>
       </form>
     </Modal>
   );

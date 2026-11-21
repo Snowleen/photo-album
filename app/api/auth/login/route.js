@@ -1,5 +1,5 @@
 import bcrypt from 'bcryptjs';
-import { db, ok, fail, readJson, missingEnv } from '@/lib/db';
+import { db, ok, fail, readJson, missingEnv, normEmail } from '@/lib/db';
 import { createSession, isSuperadminName } from '@/lib/auth';
 
 export async function POST(req) {
@@ -12,26 +12,30 @@ export async function POST(req) {
   }
 
   try {
-    const { username = '', password = '' } = await readJson(req);
-    const name = String(username).trim();
-    if (!name || !password) return fail('Please enter username and password');
+    const { email = '', password = '' } = await readJson(req);
+    const id = String(email).trim();
+    if (!id || !password) return fail('Please enter your email and password');
 
-    if (isSuperadminName(name)) {
+    // The superadmin keeps signing in with the fixed username.
+    if (isSuperadminName(id)) {
       if (password === process.env.SUPERADMIN_PASSWORD) {
         await createSession({ role: 'superadmin' });
         return ok({ role: 'superadmin' });
       }
-      return fail('Invalid username or password', 401);
+      return fail('Invalid email or password', 401);
     }
 
     const { data: user, error } = await db()
       .from('users')
       .select('id, password_hash, active')
-      .eq('username', name.toLowerCase())
+      .eq('email', normEmail(id))
       .maybeSingle();
     if (error) return fail(`Database error: ${error.message}`, 500);
+    if (user && !user.password_hash) {
+      return fail('This account has no password yet. Please ask your administrator.', 403);
+    }
     if (!user || !(await bcrypt.compare(String(password), user.password_hash))) {
-      return fail('Invalid username or password', 401);
+      return fail('Invalid email or password', 401);
     }
     if (!user.active) return fail('This account has been disabled', 403);
 

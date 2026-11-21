@@ -10,7 +10,7 @@ export async function GET() {
   if (!me) return fail('Not logged in', 401);
   return ok({
     role: 'user',
-    user: { id: me.id, username: me.username, display_name: me.display_name },
+    user: { id: me.id, email: me.email, display_name: me.display_name },
     space: me.space,
     spaces: me.spaces,
   });
