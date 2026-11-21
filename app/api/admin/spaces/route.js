@@ -8,16 +8,18 @@ export async function GET() {
   const { data, error } = await db()
     .from('spaces')
     .select(
-      'id, name, mode, created_at, users:users!users_space_id_fkey(id, username, display_name, active, created_at), photos:photos!photos_space_id_fkey(count)'
+      'id, name, mode, created_at, members:memberships(created_at, user:users(id, username, display_name, active)), photos:photos!photos_space_id_fkey(count)'
     )
     .order('created_at', { ascending: false });
   if (error) return fail(error.message, 500);
   return ok({
-    spaces: data.map((s) => ({
+    spaces: data.map(({ members, photos, ...s }) => ({
       ...s,
-      users: [...(s.users || [])].sort((a, b) => a.created_at.localeCompare(b.created_at)),
-      photo_count: s.photos?.[0]?.count ?? 0,
-      photos: undefined,
+      users: [...(members || [])]
+        .sort((a, b) => a.created_at.localeCompare(b.created_at))
+        .map((m) => m.user)
+        .filter(Boolean),
+      photo_count: photos?.[0]?.count ?? 0,
     })),
   });
 }

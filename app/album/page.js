@@ -5,8 +5,10 @@ import { api, uploadPhoto, fmtDate, daysLeft } from '@/lib/client';
 import { exportImage, exportPdf } from '@/lib/exporter';
 import Modal from '@/components/Modal';
 import ThemeDecor from '@/components/ThemeDecor';
+import { useDialog } from '@/components/useDialog';
 
-const THEME_ICON = { individual: '📷', couple: '💕', family: '☁️' };
+const THEME_ICON = { individual: '📷', couple: '💕', family: '☁️', pet: '🐾' };
+const MODE_LABEL = { individual: 'Individual', couple: 'Couple', family: 'Family', pet: 'Pet' };
 
 export default function AlbumPage() {
   const router = useRouter();
@@ -22,6 +24,8 @@ export default function AlbumPage() {
   const [exportList, setExportList] = useState(null);
   const [showMove, setShowMove] = useState(false);
   const [toast, setToast] = useState('');
+  const [showSwitch, setShowSwitch] = useState(false);
+  const [dialog, ask] = useDialog();
 
   const notify = (m) => { setToast(m); setTimeout(() => setToast(''), 2800); };
   const handleErr = useCallback((e) => {
@@ -89,7 +93,14 @@ export default function AlbumPage() {
     <div className="app" data-theme={mode}>
       <ThemeDecor mode={mode} />
       <header className="topbar">
-        <div className="brand">{THEME_ICON[mode]} {me.space.name}</div>
+        <button
+          className={`brand brand-btn ${me.spaces.length > 1 ? 'can-switch' : ''}`}
+          onClick={() => me.spaces.length > 1 && setShowSwitch(true)}
+          title={me.spaces.length > 1 ? 'Switch album space' : undefined}
+        >
+          <span>{THEME_ICON[mode]} {me.space.name}</span>
+          {me.spaces.length > 1 && <span className="caret">⇅</span>}
+        </button>
         <div className="row gap">
           <span className="muted small hide-sm">Hi, {me.user.display_name}</span>
           <button className="btn ghost" onClick={logout}>Log out</button>
@@ -111,17 +122,17 @@ export default function AlbumPage() {
           </div>
           <div className="row gap wrap">
             {tab === 'albums' && !openAlbum && <button className="btn primary" onClick={async () => {
-              const name = prompt('New album name');
+              const name = await ask.prompt({ title: 'New album', label: 'Album name', placeholder: 'e.g. Honeymoon in Bali', confirmText: 'Create' });
               if (name) { try { await api('/api/albums', { method: 'POST', body: { name } }); loadAlbums(); } catch (e) { handleErr(e); } }
             }}>+ New album</button>}
             {openAlbum && (
               <>
                 <button className="btn small" onClick={async () => {
-                  const name = prompt('Rename album', openAlbum.name);
+                  const name = await ask.prompt({ title: 'Rename album', label: 'Album name', defaultValue: openAlbum.name, confirmText: 'Rename' });
                   if (name) { try { await api(`/api/albums/${openAlbum.id}`, { method: 'PATCH', body: { name } }); setOpenAlbum({ ...openAlbum, name }); loadAlbums(); } catch (e) { handleErr(e); } }
                 }}>Rename</button>
                 <button className="btn small danger" onClick={async () => {
-                  if (!confirm(`Delete album "${openAlbum.name}"? Photos inside will be kept (just not in this album).`)) return;
+                  if (!(await ask.confirm({ title: `Delete album “${openAlbum.name}”?`, message: 'The photos inside are kept — they just won’t be in this album any more.', confirmText: 'Delete album', danger: true }))) return;
                   try { await api(`/api/albums/${openAlbum.id}`, { method: 'DELETE' }); setOpenAlbum(null); loadAlbums(); } catch (e) { handleErr(e); }
                 }}>Delete album</button>
               </>
@@ -133,7 +144,7 @@ export default function AlbumPage() {
             )}
             {inBin && !selectMode && photos?.length > 0 && (
               <button className="btn small danger" onClick={async () => {
-                if (!confirm('Permanently delete everything in the recycle bin?')) return;
+                if (!(await ask.confirm({ title: 'Empty recycle bin?', message: `All ${photos.length} photo(s) in the bin will be permanently deleted. This cannot be undone.`, confirmText: 'Empty bin', danger: true }))) return;
                 try { await api('/api/photos/bulk', { method: 'POST', body: { action: 'emptyBin' } }); refresh(); } catch (e) { handleErr(e); }
               }}>Empty bin</button>
             )}
@@ -196,13 +207,13 @@ export default function AlbumPage() {
           {inBin ? (
             <>
               <button className="btn" disabled={!selected.size} onClick={() => bulk('restore')}>♻️ Restore</button>
-              <button className="btn danger" disabled={!selected.size} onClick={() => confirm(`Permanently delete ${selected.size} photo(s)?`) && bulk('purge')}>Delete forever</button>
+              <button className="btn danger" disabled={!selected.size} onClick={async () => (await ask.confirm({ title: `Delete ${selected.size} photo(s) forever?`, message: 'They will be permanently deleted and cannot be recovered.', confirmText: 'Delete forever', danger: true })) && bulk('purge')}>Delete forever</button>
             </>
           ) : (
             <>
               <button className="btn" disabled={!selected.size} onClick={() => setExportList(selectedPhotos)}>⬇️ Export</button>
               <button className="btn" disabled={!selected.size} onClick={() => setShowMove(true)}>📚 Move</button>
-              <button className="btn danger" disabled={!selected.size} onClick={() => confirm(`Move ${selected.size} photo(s) to the recycle bin?`) && bulk('delete')}>🗑️ Delete</button>
+              <button className="btn danger" disabled={!selected.size} onClick={async () => (await ask.confirm({ title: `Delete ${selected.size} photo(s)?`, message: 'They will be moved to the recycle bin. You can restore them within 30 days.', confirmText: 'Move to bin', danger: true })) && bulk('delete')}>🗑️ Delete</button>
             </>
           )}
         </div>
@@ -227,6 +238,7 @@ export default function AlbumPage() {
           onExport={() => setExportList([detail])}
           onChanged={(msg) => { setDetail(null); if (msg) notify(msg); refresh(); }}
           onError={handleErr}
+          ask={ask}
         />
       )}
       {exportList && (
@@ -248,6 +260,30 @@ export default function AlbumPage() {
           </div>
         </Modal>
       )}
+      {showSwitch && (
+        <Modal title="Switch album space" onClose={() => setShowSwitch(false)}>
+          <div className="stack">
+            {me.spaces.map((s) => (
+              <button
+                key={s.id}
+                className={`space-pick sp-${s.mode} ${s.id === me.space.id ? 'active' : ''}`}
+                onClick={async () => {
+                  if (s.id === me.space.id) return setShowSwitch(false);
+                  try { await api('/api/auth/switch', { method: 'POST', body: { space_id: s.id } }); window.location.reload(); } catch (e) { handleErr(e); }
+                }}
+              >
+                <span className="space-pick-icon">{THEME_ICON[s.mode]}</span>
+                <span className="grow">
+                  <strong>{s.name}</strong>
+                  <span className="muted small block-line">{MODE_LABEL[s.mode]} album</span>
+                </span>
+                {s.id === me.space.id && <span className="current">Current</span>}
+              </button>
+            ))}
+          </div>
+        </Modal>
+      )}
+      {dialog}
       {toast && <div className="toast">{toast}</div>}
     </div>
   );
@@ -321,7 +357,7 @@ function UploadModal({ albums, defaultAlbum, onClose, onDone }) {
   );
 }
 
-function PhotoModal({ photo, albums, inBin, onClose, onExport, onChanged, onError }) {
+function PhotoModal({ photo, albums, inBin, onClose, onExport, onChanged, onError, ask }) {
   const [captureDate, setCaptureDate] = useState(photo.capture_date || '');
   const [remark, setRemark] = useState(photo.remark || '');
   const [albumId, setAlbumId] = useState(photo.album_id || '');
@@ -347,7 +383,7 @@ function PhotoModal({ photo, albums, inBin, onClose, onExport, onChanged, onErro
               {photo.capture_date && <div><span className="muted">Captured:</span> {fmtDate(photo.capture_date)}</div>}
               {photo.remark && <p>{photo.remark}</p>}
               <button className="btn primary block" disabled={busy} onClick={() => act(() => api(`/api/photos/${photo.id}`, { method: 'PATCH', body: { restore: true } }), 'Photo restored')}>♻️ Restore</button>
-              <button className="btn danger block" disabled={busy} onClick={() => confirm('Delete this photo forever? This cannot be undone.') && act(() => api(`/api/photos/${photo.id}?force=1`, { method: 'DELETE' }), 'Photo permanently deleted')}>Delete forever</button>
+              <button className="btn danger block" disabled={busy} onClick={async () => (await ask.confirm({ title: 'Delete this photo forever?', message: 'It will be permanently deleted and cannot be recovered.', confirmText: 'Delete forever', danger: true })) && act(() => api(`/api/photos/${photo.id}?force=1`, { method: 'DELETE' }), 'Photo permanently deleted')}>Delete forever</button>
             </>
           ) : (
             <>
@@ -361,7 +397,7 @@ function PhotoModal({ photo, albums, inBin, onClose, onExport, onChanged, onErro
               }), 'Saved')}>Save changes</button>
               <div className="row gap">
                 <button className="btn grow" onClick={onExport}>⬇️ Export</button>
-                <button className="btn danger grow" disabled={busy} onClick={() => confirm('Move this photo to the recycle bin?') && act(() => api(`/api/photos/${photo.id}`, { method: 'DELETE' }), 'Moved to recycle bin')}>🗑️ Delete</button>
+                <button className="btn danger grow" disabled={busy} onClick={async () => (await ask.confirm({ title: 'Delete this photo?', message: 'It will be moved to the recycle bin. You can restore it within 30 days.', confirmText: 'Move to bin', danger: true })) && act(() => api(`/api/photos/${photo.id}`, { method: 'DELETE' }), 'Moved to recycle bin')}>🗑️ Delete</button>
               </div>
             </>
           )}

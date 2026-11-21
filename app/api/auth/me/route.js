@@ -12,5 +12,6 @@ export async function GET() {
     role: 'user',
     user: { id: me.id, username: me.username, display_name: me.display_name },
     space: me.space,
+    spaces: me.spaces,
   });
 }

@@ -35,6 +35,12 @@ export async function POST(req) {
     }
     if (!user.active) return fail('This account has been disabled', 403);
 
+    const { count } = await db()
+      .from('memberships')
+      .select('user_id', { count: 'exact', head: true })
+      .eq('user_id', user.id);
+    if (!count) return fail('Your account has not been added to any album yet. Please contact the administrator.', 403);
+
     await createSession({ role: 'user', uid: user.id });
     return ok({ role: 'user' });
   } catch (e) {

@@ -12,7 +12,7 @@ export async function PATCH(req, { params }) {
   }
   if (body.mode !== undefined) {
     if (!MODES.includes(body.mode)) return fail('Invalid mode');
-    const { count } = await db().from('users').select('id', { count: 'exact', head: true }).eq('space_id', params.id);
+    const { count } = await db().from('memberships').select('user_id', { count: 'exact', head: true }).eq('space_id', params.id);
     if ((count || 0) > MODE_LIMITS[body.mode]) {
       return fail(`This space has ${count} users. ${body.mode} mode allows only ${MODE_LIMITS[body.mode]}. Remove users first.`);
     }
