@@ -1,13 +1,16 @@
-// Brand mark: two overlapping photo frames with a heart.
-export default function Logo({ size = 44, heart = '#e0527f' }) {
+// ME-mory brand mark (cloud + photos) on a white rounded tile.
+// The artwork has a white background, so it always sits on white.
+export default function Logo({ size = 44 }) {
   return (
-    <svg width={size} height={size} viewBox="0 0 48 48" fill="none" aria-hidden>
-      <rect x="4" y="10" width="28" height="30" rx="6" transform="rotate(-8 4 10)" fill="currentColor" opacity="0.4" />
-      <rect x="14" y="7" width="28" height="32" rx="6" fill="currentColor" />
-      <path
-        d="M28 30.5s-7-4.3-7-9.1c0-2.3 1.7-4 3.8-4 1.4 0 2.6.8 3.2 1.9.6-1.1 1.8-1.9 3.2-1.9 2.1 0 3.8 1.7 3.8 4 0 4.8-7 9.1-7 9.1z"
-        fill={heart}
-      />
-    </svg>
+    <span className="logo-tile" style={{ width: size, height: size }}>
+      <img src="/brand/memory-mark.png" alt="" width={size} height={size} />
+    </span>
   );
 }
+
+/** Full logo: mark + "ME-mory" wordmark. */
+export function FullLogo({ width = 180 }) {
+  return <img className="full-logo" src="/brand/memory-logo.png" alt="ME-mory" width={width} style={{ height: 'auto' }} />;
+}
+
+export const BRAND = 'ME-mory';

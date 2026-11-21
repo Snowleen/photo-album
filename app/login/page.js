@@ -2,7 +2,10 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { api } from '@/lib/client';
+import Link from 'next/link';
 import AuthShell, { PasswordInput } from '@/components/AuthShell';
+import { FullLogo } from '@/components/Logo';
+import { InstallButton } from '@/components/Pwa';
 
 const REMEMBER_KEY = 'pa_remember'; // stores { email } on this device when "Remember me" is ticked
 
@@ -40,8 +43,16 @@ export default function LoginPage() {
   }
 
   return (
-    <AuthShell>
+    <AuthShell
+      topActions={
+        <>
+          <InstallButton className="top-btn" />
+          <Link href="/signup" className="top-btn solid">Sign up</Link>
+        </>
+      }
+    >
       <form className="auth-card" onSubmit={login} noValidate>
+          <div className="card-logo"><FullLogo width={150} /></div>
           <h2>Welcome back</h2>
           <p className="auth-muted">Sign in to continue to your album</p>
 
@@ -79,7 +90,10 @@ export default function LoginPage() {
           <button className="auth-submit" disabled={busy || !email || !password}>
             {busy ? <span className="spinner" /> : 'Sign in'}
           </button>
-          <p className="auth-foot">Forgot your password or need an account? Ask your album administrator.</p>
+          <p className="auth-foot">
+            New here? <Link href="/signup" className="text-link">Request an account</Link>
+            <br />Forgot your password? Ask your album administrator.
+          </p>
         </form>
     </AuthShell>
   );

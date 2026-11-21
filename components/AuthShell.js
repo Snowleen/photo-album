@@ -36,16 +36,17 @@ export function PasswordInput({ id, value, onChange, autoComplete = 'current-pas
 }
 
 /** Pink two-panel layout shared by the sign-in, invitation and reset pages. */
-export default function AuthShell({ children }) {
+export default function AuthShell({ children, topActions }) {
   return (
     <main className="auth">
+      {topActions && <div className="auth-top">{topActions}</div>}
       <section className="auth-hero">
         <div className="auth-glow g1" />
         <div className="auth-glow g2" />
         <div className="auth-hero-inner">
           <div className="auth-brand">
-            <span className="auth-logo"><Logo size={40} /></span>
-            <span>Photo Album</span>
+            <Logo size={44} />
+            <span className="brand-word">ME-mory</span>
           </div>
           <h1 className="auth-headline">Every moment,<br />beautifully kept.</h1>
           <p className="auth-sub">A private home for the photos you share with the people you love.</p>
@@ -58,7 +59,7 @@ export default function AuthShell({ children }) {
       </section>
       <section className="auth-panel">
         {children}
-        <p className="auth-copy">© {new Date().getFullYear()} Photo Album · Private &amp; secure</p>
+        <p className="auth-copy">© {new Date().getFullYear()} ME-mory · Private &amp; secure</p>
       </section>
     </main>
   );

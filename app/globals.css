@@ -480,3 +480,53 @@ input:focus, textarea:focus, select:focus { outline: 2px solid color-mix(in srgb
 .remember .box { width: 20px; height: 20px; border-radius: 6px; border: 1.5px solid #e9bfd0; background: #fffafc; display: grid; place-items: center; color: transparent; transition: background 0.15s, border-color 0.15s; }
 .remember input:checked + .box { background: var(--rose); border-color: var(--rose); color: #fff; }
 .remember input:focus-visible + .box { box-shadow: 0 0 0 4px rgba(224, 82, 127, 0.18); }
+
+/* ---------- Sign-in page top buttons ---------- */
+.auth { position: relative; }
+.auth-top { position: absolute; top: 20px; right: 24px; z-index: 5; display: flex; gap: 10px; }
+.top-btn {
+  display: inline-flex; align-items: center; gap: 7px; height: 40px; padding: 0 16px; border-radius: 999px;
+  font: 600 0.9rem var(--font-sans), system-ui, sans-serif; text-decoration: none; cursor: pointer;
+  background: #fff; color: var(--rose-dark); border: 1px solid #f3cdda; box-shadow: 0 2px 10px rgba(224, 82, 127, 0.1);
+  transition: transform 0.1s, background 0.15s;
+}
+.top-btn:hover { background: #fff5f8; }
+.top-btn:active { transform: translateY(1px); }
+.top-btn.solid { background: var(--rose); color: #fff; border-color: var(--rose); }
+.top-btn.solid:hover { background: var(--rose-dark); }
+.top-btn:disabled { opacity: 0.6; cursor: default; }
+@media (max-width: 860px) {
+  .auth-top { top: 14px; right: 14px; gap: 8px; }
+  .top-btn { height: 34px; padding: 0 12px; font-size: 0.82rem; background: rgba(255, 255, 255, 0.92); }
+  .auth-hero { padding-top: 70px; }
+}
+
+.field-hint { font-size: 0.78rem; color: var(--ink-soft); }
+.optional { font-weight: 400; color: var(--ink-soft); }
+.auth textarea { padding: 12px 14px; border: 1.5px solid #f0d3de; border-radius: 12px; background: #fffafc; font-size: 1rem; color: var(--ink); resize: vertical; }
+.auth textarea:focus { outline: none; border-color: var(--rose); background: #fff; box-shadow: 0 0 0 4px rgba(224, 82, 127, 0.14); }
+.hp { position: absolute; left: -9999px; width: 1px; height: 1px; opacity: 0; }
+.done-badge { width: 52px; height: 52px; border-radius: 16px; display: grid; place-items: center; background: #fde7ef; color: var(--rose); }
+
+/* Install help */
+.install-steps { list-style: none; padding: 0; margin: 0 0 16px; display: flex; flex-direction: column; gap: 14px; }
+.install-steps li { display: flex; gap: 12px; align-items: flex-start; line-height: 1.5; }
+.step-num { flex: none; width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center; background: #fde7ef; color: #c23a66; font-weight: 700; font-size: 0.85rem; }
+.inline-glyph { vertical-align: -3px; color: #2f7be0; }
+
+/* Requests */
+.request-note { font-size: 0.88rem; color: var(--text); background: var(--accent-soft); padding: 8px 10px; border-radius: 10px; line-height: 1.45; }
+.credentials { white-space: pre-wrap; word-break: break-word; font: 0.85rem/1.55 ui-monospace, Consolas, monospace; background: #faf6f8; border: 1px solid var(--border); border-radius: 12px; padding: 12px; margin: 0; max-height: 260px; overflow: auto; }
+a.btn { text-decoration: none; }
+.tabs .count.alert { background: #e0527f; color: #fff; }
+.auth .field > label { display: block; }
+
+/* ---------- ME-mory brand ---------- */
+.logo-tile { display: inline-grid; place-items: center; flex: none; background: #fff; border-radius: 26%; overflow: hidden; box-shadow: 0 2px 10px rgba(224, 82, 127, 0.18); }
+.logo-tile img { width: 100%; height: 100%; object-fit: contain; display: block; }
+.brand-word { font-family: var(--font-brand), var(--font-sans), system-ui, sans-serif; font-weight: 800; letter-spacing: 0.01em; }
+.auth-brand .brand-word { font-size: 1.25rem; }
+.topbar .brand-word { color: #e8578a; font-size: 1.15rem; }
+.full-logo { display: block; max-width: 100%; }
+.card-logo { display: flex; justify-content: center; margin: -10px 0 2px; }
+@media (max-width: 860px) { .card-logo { display: none; } }

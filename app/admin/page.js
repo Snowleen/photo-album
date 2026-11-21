@@ -5,7 +5,7 @@ import { api, fmtDate } from '@/lib/client';
 import Modal from '@/components/Modal';
 import Logo from '@/components/Logo';
 import { useDialog } from '@/components/useDialog';
-import { ModeIcon, AlbumsIcon, UsersIcon, CloseIcon } from '@/components/Icons';
+import { ModeIcon, AlbumsIcon, UsersIcon, CloseIcon, InboxIcon } from '@/components/Icons';
 
 const MODES = {
   individual: { label: 'Individual', limit: 1 },
@@ -41,6 +41,8 @@ export default function AdminPage() {
   const router = useRouter();
   const [spaces, setSpaces] = useState(null);
   const [users, setUsers] = useState([]);
+  const [requests, setRequests] = useState([]);
+  const [approving, setApproving] = useState(null);
   const [error, setError] = useState('');
   const [toast, setToast] = useState('');
   const [tab, setTab] = useState('spaces'); // spaces | logins
@@ -48,7 +50,7 @@ export default function AdminPage() {
 
   // Remember the last tab on this device.
   useEffect(() => {
-    try { const t = localStorage.getItem('admin_tab'); if (t === 'logins') setTab(t); } catch {}
+    try { const t = localStorage.getItem('admin_tab'); if (t === 'logins' || t === 'requests') setTab(t); } catch {}
   }, []);
   function switchTab(t) {
     setTab(t);
@@ -63,7 +65,8 @@ export default function AdminPage() {
 
   const load = useCallback(async () => {
     try {
-      const [s, u] = await Promise.all([api('/api/admin/spaces'), api('/api/admin/users')]);
+      const [s, u, r] = await Promise.all([api('/api/admin/spaces'), api('/api/admin/users'), api('/api/admin/requests').catch(() => ({ requests: [] }))]);
+      setRequests(r.requests);
       setSpaces(s.spaces);
       setUsers(u.users);
     } catch (e) {
@@ -115,6 +118,15 @@ export default function AdminPage() {
     });
     if (yes) run(() => api(`/api/admin/users/${u.id}`, { method: 'DELETE' }));
   }
+  async function rejectRequest(r) {
+    const yes = await ask.confirm({
+      title: `Reject ${r.display_name}’s request?`,
+      message: `The request from ${r.email} will be deleted. They won’t be notified.`,
+      confirmText: 'Reject',
+      danger: true,
+    });
+    if (yes) run(() => api(`/api/admin/requests/${r.id}`, { method: 'DELETE' }));
+  }
   async function addEmail(u) {
     const email = await ask.prompt({
       title: `Add email for ${u.display_name}`,
@@ -129,7 +141,7 @@ export default function AdminPage() {
   return (
     <div className="app" data-theme="admin">
       <header className="topbar">
-        <div className="brand row gap"><span className="admin-logo"><Logo size={28} /></span> <span className="hide-sm">Photo Album</span> <span className="badge">Superadmin</span></div>
+        <div className="brand row gap"><Logo size={34} /> <span className="hide-sm brand-word">ME-mory</span> <span className="badge">Superadmin</span></div>
         <div className="row gap">
           <button className="btn ghost small" onClick={logout}>Log out</button>
         </div>
@@ -141,6 +153,9 @@ export default function AdminPage() {
         </button>
         <button className={tab === 'logins' ? 'active' : ''} onClick={() => switchTab('logins')}>
           <UsersIcon size={17} /> Logins <span className="count">{users.length}</span>
+        </button>
+        <button className={tab === 'requests' ? 'active' : ''} onClick={() => switchTab('requests')}>
+          <InboxIcon size={17} /> Requests {requests.length > 0 && <span className="count alert">{requests.length}</span>}
         </button>
       </nav>
 
@@ -244,6 +259,31 @@ export default function AdminPage() {
           </div>
         )}
         </>)}
+
+        {tab === 'requests' && (<>
+        <div className="row-between toolbar">
+          <h2>Sign-up requests</h2>
+          <span className="muted small">People who asked for an account from the Sign up page</span>
+        </div>
+        {requests.length === 0 && <p className="muted empty">No pending requests.</p>}
+        {requests.length > 0 && (
+          <div className="card accounts">
+            {requests.map((r) => (
+              <div key={r.id} className="account-row">
+                <div className="account-info">
+                  <div className="ellipsis"><strong>{r.display_name}</strong> <span className="muted small">{r.email}</span></div>
+                  {r.note && <div className="request-note">“{r.note}”</div>}
+                  <div className="muted small">Requested {fmtDate(r.created_at)}</div>
+                </div>
+                <div className="row gap wrap">
+                  <button className="btn small primary" onClick={() => setApproving(r)}>Approve</button>
+                  <button className="btn small danger" onClick={() => rejectRequest(r)}>Reject</button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+        </>)}
       </main>
 
       {showNew && <NewSpaceModal onClose={() => setShowNew(false)} onDone={() => { setShowNew(false); load(); }} />}
@@ -256,6 +296,7 @@ export default function AdminPage() {
         />
       )}
       {resetUser && <ResetModal user={resetUser} onClose={() => setResetUser(null)} />}
+      {approving && <ApproveModal request={approving} onClose={() => setApproving(null)} onApproved={() => load()} />}
       {dialog}
       {toast && <div className="toast">{toast}</div>}
     </div>
@@ -357,6 +398,90 @@ function AddMemberModal({ space, users, onClose, onDone }) {
           {busy ? 'Adding…' : 'Add to space'}
         </button>
       </form>
+    </Modal>
+  );
+}
+
+/** Readable random password, e.g. "rosy-Maple-4821". */
+function generatePassword() {
+  const words = ['rosy', 'sunny', 'maple', 'petal', 'cloud', 'honey', 'velvet', 'coral', 'misty', 'berry', 'pearl', 'lumen', 'amber', 'willow'];
+  const rnd = (n) => crypto.getRandomValues(new Uint32Array(1))[0] % n;
+  const i = rnd(words.length);
+  const w2 = words[(i + 1 + rnd(words.length - 1)) % words.length]; // always a different word
+  return `${words[i]}-${w2[0].toUpperCase()}${w2.slice(1)}-${1000 + rnd(9000)}`;
+}
+
+function ApproveModal({ request, onClose, onApproved }) {
+  const [password, setPassword] = useState(generatePassword);
+  const [error, setError] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [done, setDone] = useState(null);
+  const [copied, setCopied] = useState(false);
+
+  async function approve(e) {
+    e.preventDefault();
+    setBusy(true);
+    setError('');
+    try {
+      await api(`/api/admin/requests/${request.id}/approve`, { method: 'POST', body: { password } });
+      setDone(true);
+      onApproved();
+    } catch (err) { setError(err.message); }
+    setBusy(false);
+  }
+
+  const site = typeof window !== 'undefined' ? window.location.origin : '';
+  const subject = 'Your ME-mory account is ready';
+  const message =
+    `Hi ${request.display_name},\n\n` +
+    `Your ME-mory account has been approved.\n\n` +
+    `Sign in at: ${site}/login\n` +
+    `Email: ${request.email}\n` +
+    `Password: ${password}\n\n` +
+    `After signing in, tap your profile picture (top right) to change your password and nickname.\n` +
+    `Tip: tap "Install app" on the sign-in page to add ME-mory to your home screen.`;
+
+  async function copy() {
+    try { await navigator.clipboard.writeText(message); setCopied(true); } catch {}
+  }
+
+  return (
+    <Modal title={done ? 'Account created' : `Approve ${request.display_name}`} onClose={onClose}>
+      {!done ? (
+        <form className="form" onSubmit={approve}>
+          <div className="meta">
+            <div><span className="muted">Name:</span> {request.display_name}</div>
+            <div><span className="muted">Email:</span> {request.email}</div>
+            {request.note && <div className="request-note">“{request.note}”</div>}
+          </div>
+          <label>
+            Password for this account
+            <div className="copy-box">
+              <input value={password} onChange={(e) => setPassword(e.target.value)} minLength={6} required />
+              <button type="button" className="btn" onClick={() => setPassword(generatePassword())}>Generate</button>
+            </div>
+            <span className="hint">You’ll email this to them in the next step. They can change it after signing in.</span>
+          </label>
+          {error && <div className="note-err">{error}</div>}
+          <button className="btn primary block" disabled={busy || password.length < 6}>{busy ? 'Creating…' : 'Approve & create login'}</button>
+        </form>
+      ) : (
+        <div className="stack">
+          <div className="note-ok">{request.display_name} can now sign in. Send them their details:</div>
+          <pre className="credentials">{message}</pre>
+          <div className="row gap">
+            <button className="btn grow" onClick={copy}>{copied ? 'Copied' : 'Copy message'}</button>
+            <a
+              className="btn primary grow"
+              href={`mailto:${encodeURIComponent(request.email)}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(message)}`}
+            >
+              Open in email app
+            </a>
+          </div>
+          <p className="muted small">Next: open <b>Album spaces</b>, choose a space, then <b>+ Add member → Existing login</b> to give them access.</p>
+          <button className="btn ghost block" onClick={onClose}>Done</button>
+        </div>
+      )}
     </Modal>
   );
 }
