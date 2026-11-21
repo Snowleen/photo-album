@@ -6,7 +6,7 @@ export async function POST(req) {
   const missing = missingEnv();
   if (missing.length) {
     return fail(
-      `Server setup incomplete — missing: ${missing.join(', ')}. Add them in Vercel → Settings → Environment Variables, then redeploy.`,
+      `Server setup incomplete — missing: ${missing.join(', ')}. Add them in Vercel (Settings, Environment Variables), then redeploy.`,
       500
     );
   }

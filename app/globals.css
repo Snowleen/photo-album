@@ -313,7 +313,6 @@ input:focus, textarea:focus, select:focus { outline: 2px solid color-mix(in srgb
 .cloud::after { width: 90px; height: 90px; top: -50px; left: 62px; }
 @keyframes drift { from { left: -240px; } to { left: 110vw; } }
 
-[data-theme='couple'] .topbar .brand::after { content: ' ♥'; color: var(--primary); }
 [data-theme='couple'] .photo-tile { border: 3px solid #fff; }
 [data-theme='family'] .photo-tile { border: 3px solid #fff; }
 
@@ -330,7 +329,6 @@ input:focus, textarea:focus, select:focus { outline: 2px solid color-mix(in srgb
 .paw svg { width: 100%; height: 100%; }
 @keyframes pawstep { 0%, 100% { opacity: 0; } 12%, 55% { opacity: 0.22; } 70% { opacity: 0; } }
 [data-theme='pet'] .photo-tile { border: 3px solid #fff; }
-[data-theme='pet'] .topbar .brand-btn span:first-child::after { content: ''; }
 @media (prefers-reduced-motion: reduce) { .paw { animation: none; opacity: 0.15; } }
 
 /* ---------- Styled dialogs (replace browser popups) ---------- */
@@ -365,7 +363,7 @@ input:focus, textarea:focus, select:focus { outline: 2px solid color-mix(in srgb
 
 /* ---------- Space switcher ---------- */
 .brand-btn { background: none; border: none; padding: 6px 10px; margin-left: -10px; border-radius: 12px; display: flex; align-items: center; gap: 8px; cursor: default; color: var(--text); max-width: 65vw; }
-.brand-btn span:first-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.brand-btn > span:not(.caret) { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .brand-btn.can-switch { cursor: pointer; }
 .brand-btn.can-switch:hover { background: var(--accent-soft); }
 .caret { font-size: 0.8rem; color: var(--primary); background: var(--accent-soft); border-radius: 8px; padding: 2px 7px; }
@@ -455,3 +453,23 @@ input:focus, textarea:focus, select:focus { outline: 2px solid color-mix(in srgb
 .search-clear { position: absolute; right: 6px; width: 30px; height: 30px; border: none; background: none; color: var(--muted); border-radius: 8px; cursor: pointer; }
 .search-clear:hover { background: var(--accent-soft); }
 .center-text { text-align: center; padding: 16px 0; }
+
+/* ---------- Line icons ---------- */
+.icon { flex: none; vertical-align: -3px; }
+.btn, .tabs button, .chip, .fab, .tag, .title-icon { display: inline-flex; align-items: center; justify-content: center; gap: 7px; }
+.tag { gap: 5px; }
+.title-icon { justify-content: flex-start; gap: 9px; }
+.title-icon .icon, .brand-icon, .chip:not(.active) .icon, .mode-icon .icon { color: var(--primary); }
+.album-cover .icon { color: var(--primary); opacity: 0.55; }
+.space-pick-icon { color: var(--primary); }
+.sp-couple .space-pick-icon { color: #e0527f; }
+.sp-family .space-pick-icon { color: #2f8fe0; }
+.sp-pet .space-pick-icon { color: #e0873a; }
+.sp-individual .space-pick-icon { color: #4f5bd5; }
+.caret { display: inline-flex; align-items: center; }
+.check .icon { stroke-width: 2.6; }
+.icon-btn { display: inline-flex; align-items: center; }
+.mode-icon { font-size: inherit; }
+.tabs { scrollbar-width: none; }
+.tabs::-webkit-scrollbar { display: none; }
+@media (max-width: 420px) { .tabs { gap: 2px; padding: 10px 10px 0; } .tabs button { padding: 8px 11px; font-size: 0.9rem; gap: 5px; } }

@@ -26,7 +26,9 @@ export default function ThemeDecor({ mode }) {
               fontSize: `${14 + (i % 4) * 8}px`,
             }}
           >
-            ♥
+            <svg viewBox="0 0 24 24" width="1em" height="1em" fill="currentColor" aria-hidden>
+              <path d="M12 21s-8-4.9-8-10.8A4.7 4.7 0 0 1 12 7.2a4.7 4.7 0 0 1 8 3c0 5.9-8 10.8-8 10.8z" />
+            </svg>
           </span>
         ))}
       </div>

@@ -5,12 +5,13 @@ import { api, fmtDate } from '@/lib/client';
 import Modal from '@/components/Modal';
 import Logo from '@/components/Logo';
 import { useDialog } from '@/components/useDialog';
+import { ModeIcon, AlbumsIcon, UsersIcon, CloseIcon } from '@/components/Icons';
 
 const MODES = {
-  individual: { label: 'Individual', icon: '👤', limit: 1 },
-  couple: { label: 'Couple', icon: '💕', limit: 2 },
-  family: { label: 'Family', icon: '☁️', limit: 10 },
-  pet: { label: 'Pet', icon: '🐾', limit: 10 },
+  individual: { label: 'Individual', limit: 1 },
+  couple: { label: 'Couple', limit: 2 },
+  family: { label: 'Family', limit: 10 },
+  pet: { label: 'Pet', limit: 10 },
 };
 
 const who = (u) => u.email || (u.username ? `@${u.username}` : '');
@@ -31,7 +32,7 @@ function SearchBox({ value, onChange, placeholder, autoFocus }) {
         <circle cx="11" cy="11" r="7" /><path d="M20 20l-3.5-3.5" />
       </svg>
       <input type="search" value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} autoFocus={autoFocus} />
-      {value && <button type="button" className="search-clear" onClick={() => onChange('')} aria-label="Clear search">✕</button>}
+      {value && <button type="button" className="search-clear" onClick={() => onChange('')} aria-label="Clear search"><CloseIcon size={16} /></button>}
     </div>
   );
 }
@@ -136,10 +137,10 @@ export default function AdminPage() {
 
       <nav className="tabs">
         <button className={tab === 'spaces' ? 'active' : ''} onClick={() => switchTab('spaces')}>
-          📚 Album spaces {spaces && <span className="count">{spaces.length}</span>}
+          <AlbumsIcon size={17} /> Album spaces {spaces && <span className="count">{spaces.length}</span>}
         </button>
         <button className={tab === 'logins' ? 'active' : ''} onClick={() => switchTab('logins')}>
-          👥 Logins <span className="count">{users.length}</span>
+          <UsersIcon size={17} /> Logins <span className="count">{users.length}</span>
         </button>
       </nav>
 
@@ -162,7 +163,7 @@ export default function AdminPage() {
               <div key={s.id} className={`card space-card mode-${s.mode}`}>
                 <div className="row-between">
                   <div>
-                    <h3>{m.icon} {s.name}</h3>
+                    <h3 className="title-icon"><ModeIcon mode={s.mode} size={20} /> {s.name}</h3>
                     <p className="muted small">{s.photo_count} photos · created {fmtDate(s.created_at)}</p>
                   </div>
                   <div className="row gap">
@@ -178,7 +179,7 @@ export default function AdminPage() {
                       className={`chip ${s.mode === key ? 'active' : ''}`}
                       onClick={() => s.mode !== key && run(() => api(`/api/admin/spaces/${s.id}`, { method: 'PATCH', body: { mode: key } }))}
                     >
-                      {v.icon} {v.label} <span className="muted small">(max {v.limit})</span>
+                      <ModeIcon mode={key} size={16} /> {v.label} <span className="muted small">(max {v.limit})</span>
                     </button>
                   ))}
                 </div>
@@ -224,7 +225,7 @@ export default function AdminPage() {
                   <div className="tags">
                     {!u.email && <span className="tag warn">No email</span>}
                     {u.spaces.length === 0 && <span className="tag warn">Not in any space</span>}
-                    {u.spaces.map((sp) => <span key={sp.id} className="tag">{MODES[sp.mode]?.icon} {sp.name}</span>)}
+                    {u.spaces.map((sp) => <span key={sp.id} className="tag"><ModeIcon mode={sp.mode} size={13} /> {sp.name}</span>)}
                   </div>
                 </div>
                 <div className="row gap wrap">
@@ -251,7 +252,7 @@ export default function AdminPage() {
           space={addUserTo}
           users={users.filter((u) => !addUserTo.users.some((m) => m.id === u.id))}
           onClose={() => setAddUserTo(null)}
-          onDone={() => { setAddUserTo(null); load(); notify('Member added ✓'); }}
+          onDone={() => { setAddUserTo(null); load(); notify('Member added'); }}
         />
       )}
       {resetUser && <ResetModal user={resetUser} onClose={() => setResetUser(null)} />}
@@ -280,7 +281,7 @@ function NewSpaceModal({ onClose, onDone }) {
         <div className="mode-grid">
           {Object.entries(MODES).map(([key, v]) => (
             <button type="button" key={key} className={`mode-card m-${key} ${mode === key ? 'active' : ''}`} onClick={() => setMode(key)}>
-              <span className="mode-icon">{v.icon}</span>
+              <span className="mode-icon"><ModeIcon mode={key} size={22} /></span>
               <strong>{v.label}</strong>
               <span className="muted small">up to {v.limit} member{v.limit > 1 ? 's' : ''}</span>
             </button>
@@ -367,7 +368,7 @@ function ResetModal({ user, onClose }) {
     e.preventDefault();
     try {
       await api(`/api/admin/users/${user.id}`, { method: 'PATCH', body: { password } });
-      setMsg({ ok: true, text: 'Password updated ✓ — share the new password with them.' });
+      setMsg({ ok: true, text: 'Password updated. Share the new password with them.' });
       setPassword('');
     } catch (err) { setMsg({ ok: false, text: err.message }); }
   }

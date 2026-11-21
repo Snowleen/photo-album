@@ -6,8 +6,8 @@ import { exportImage, exportPdf } from '@/lib/exporter';
 import Modal from '@/components/Modal';
 import ThemeDecor from '@/components/ThemeDecor';
 import { useDialog } from '@/components/useDialog';
+import { ModeIcon, ImageIcon, AlbumsIcon, TrashIcon, ArrowLeftIcon, CheckIcon, RestoreIcon, DownloadIcon, MoveIcon, PlusIcon, SwitchIcon } from '@/components/Icons';
 
-const THEME_ICON = { individual: '📷', couple: '💕', family: '☁️', pet: '🐾' };
 const MODE_LABEL = { individual: 'Individual', couple: 'Couple', family: 'Family', pet: 'Pet' };
 
 export default function AlbumPage() {
@@ -99,8 +99,8 @@ export default function AlbumPage() {
           onClick={() => me.spaces.length > 1 && setShowSwitch(true)}
           title={me.spaces.length > 1 ? 'Switch album space' : undefined}
         >
-          <span>{THEME_ICON[mode]} {me.space.name}</span>
-          {me.spaces.length > 1 && <span className="caret">⇅</span>}
+          <ModeIcon mode={mode} size={20} className="brand-icon" /><span>{me.space.name}</span>
+          {me.spaces.length > 1 && <span className="caret"><SwitchIcon size={14} /></span>}
         </button>
         <button className="profile-btn" onClick={() => setShowProfile(true)} title="My profile">
           <span className="hide-sm">{me.user.display_name}</span>
@@ -109,16 +109,16 @@ export default function AlbumPage() {
       </header>
 
       <nav className="tabs">
-        <button className={tab === 'photos' ? 'active' : ''} onClick={() => switchTab('photos')}>🖼️ Photos</button>
-        <button className={tab === 'albums' ? 'active' : ''} onClick={() => switchTab('albums')}>📚 Albums</button>
-        <button className={tab === 'bin' ? 'active' : ''} onClick={() => switchTab('bin')}>🗑️ Recycle bin</button>
+        <button className={tab === 'photos' ? 'active' : ''} onClick={() => switchTab('photos')}><ImageIcon size={17} /> Photos</button>
+        <button className={tab === 'albums' ? 'active' : ''} onClick={() => switchTab('albums')}><AlbumsIcon size={17} /> Albums</button>
+        <button className={tab === 'bin' ? 'active' : ''} onClick={() => switchTab('bin')}><TrashIcon size={17} /> Recycle bin</button>
       </nav>
 
       <main className="container">
         {/* Toolbar */}
         <div className="row-between toolbar">
           <div className="row gap">
-            {openAlbum && <button className="btn small" onClick={() => { setOpenAlbum(null); exitSelect(); }}>← Albums</button>}
+            {openAlbum && <button className="btn small" onClick={() => { setOpenAlbum(null); exitSelect(); }}><ArrowLeftIcon size={15} /> Albums</button>}
             <h2>{inBin ? 'Recycle bin' : openAlbum ? openAlbum.name : tab === 'albums' ? 'Albums' : 'All photos'}</h2>
           </div>
           <div className="row gap wrap">
@@ -160,7 +160,7 @@ export default function AlbumPage() {
             <div className="album-grid">
               {albums.map((a) => (
                 <button key={a.id} className="album-card" onClick={() => setOpenAlbum(a)}>
-                  <div className="album-cover">{a.cover ? <img src={a.cover} alt="" loading="lazy" /> : <span>{THEME_ICON[mode]}</span>}</div>
+                  <div className="album-cover">{a.cover ? <img src={a.cover} alt="" loading="lazy" /> : <ModeIcon mode={mode} size={34} />}</div>
                   <div className="album-name">{a.name}</div>
                   <div className="muted small">{a.count} photo{a.count === 1 ? '' : 's'}</div>
                 </button>
@@ -190,7 +190,7 @@ export default function AlbumPage() {
                     onClick={() => (selectMode ? toggle(p.id) : setDetail(p))}
                   >
                     {p.url ? <img src={p.url} alt={p.remark || ''} loading="lazy" /> : <span className="muted">missing</span>}
-                    {selectMode && <span className="check">{selected.has(p.id) ? '✓' : ''}</span>}
+                    {selectMode && <span className="check">{selected.has(p.id) && <CheckIcon size={15} />}</span>}
                     <span className="tile-label">
                       {inBin ? `${daysLeft(p.deleted_at)} days left` : fmtDate(p.capture_date || p.uploaded_at)}
                     </span>
@@ -207,19 +207,19 @@ export default function AlbumPage() {
         <div className="bottom-bar">
           {inBin ? (
             <>
-              <button className="btn" disabled={!selected.size} onClick={() => bulk('restore')}>♻️ Restore</button>
+              <button className="btn" disabled={!selected.size} onClick={() => bulk('restore')}><RestoreIcon size={17} /> Restore</button>
               <button className="btn danger" disabled={!selected.size} onClick={async () => (await ask.confirm({ title: `Delete ${selected.size} photo(s) forever?`, message: 'They will be permanently deleted and cannot be recovered.', confirmText: 'Delete forever', danger: true })) && bulk('purge')}>Delete forever</button>
             </>
           ) : (
             <>
-              <button className="btn" disabled={!selected.size} onClick={() => setExportList(selectedPhotos)}>⬇️ Export</button>
-              <button className="btn" disabled={!selected.size} onClick={() => setShowMove(true)}>📚 Move</button>
-              <button className="btn danger" disabled={!selected.size} onClick={async () => (await ask.confirm({ title: `Delete ${selected.size} photo(s)?`, message: 'They will be moved to the recycle bin. You can restore them within 30 days.', confirmText: 'Move to bin', danger: true })) && bulk('delete')}>🗑️ Delete</button>
+              <button className="btn" disabled={!selected.size} onClick={() => setExportList(selectedPhotos)}><DownloadIcon size={17} /> Export</button>
+              <button className="btn" disabled={!selected.size} onClick={() => setShowMove(true)}><MoveIcon size={17} /> Move</button>
+              <button className="btn danger" disabled={!selected.size} onClick={async () => (await ask.confirm({ title: `Delete ${selected.size} photo(s)?`, message: 'They will be moved to the recycle bin. You can restore them within 30 days.', confirmText: 'Move to bin', danger: true })) && bulk('delete')}><TrashIcon size={17} /> Delete</button>
             </>
           )}
         </div>
       ) : (
-        !inBin && <button className="fab" onClick={() => setShowUpload(true)}>＋ Upload</button>
+        !inBin && <button className="fab" onClick={() => setShowUpload(true)}><PlusIcon size={20} /> Upload</button>
       )}
 
       {showUpload && (
@@ -254,7 +254,7 @@ export default function AlbumPage() {
         <Modal title={`Move ${selected.size} photo(s) to album`} onClose={() => setShowMove(false)}>
           <div className="stack">
             {albums.map((a) => (
-              <button key={a.id} className="btn block" onClick={() => { setShowMove(false); bulk('move', { album_id: a.id }); }}>📚 {a.name}</button>
+              <button key={a.id} className="btn block" onClick={() => { setShowMove(false); bulk('move', { album_id: a.id }); }}><AlbumsIcon size={16} /> {a.name}</button>
             ))}
             <button className="btn block ghost" onClick={() => { setShowMove(false); bulk('move', { album_id: null }); }}>Remove from album</button>
             {albums.length === 0 && <p className="muted small">No albums yet — create one in the Albums tab.</p>}
@@ -273,7 +273,7 @@ export default function AlbumPage() {
                   try { await api('/api/auth/switch', { method: 'POST', body: { space_id: s.id } }); window.location.reload(); } catch (e) { handleErr(e); }
                 }}
               >
-                <span className="space-pick-icon">{THEME_ICON[s.mode]}</span>
+                <span className="space-pick-icon"><ModeIcon mode={s.mode} size={22} /></span>
                 <span className="grow">
                   <strong>{s.name}</strong>
                   <span className="muted small block-line">{MODE_LABEL[s.mode]} album</span>
@@ -391,7 +391,7 @@ function PhotoModal({ photo, albums, inBin, onClose, onExport, onChanged, onErro
             <>
               {photo.capture_date && <div><span className="muted">Captured:</span> {fmtDate(photo.capture_date)}</div>}
               {photo.remark && <p>{photo.remark}</p>}
-              <button className="btn primary block" disabled={busy} onClick={() => act(() => api(`/api/photos/${photo.id}`, { method: 'PATCH', body: { restore: true } }), 'Photo restored')}>♻️ Restore</button>
+              <button className="btn primary block" disabled={busy} onClick={() => act(() => api(`/api/photos/${photo.id}`, { method: 'PATCH', body: { restore: true } }), 'Photo restored')}><RestoreIcon size={17} /> Restore</button>
               <button className="btn danger block" disabled={busy} onClick={async () => (await ask.confirm({ title: 'Delete this photo forever?', message: 'It will be permanently deleted and cannot be recovered.', confirmText: 'Delete forever', danger: true })) && act(() => api(`/api/photos/${photo.id}?force=1`, { method: 'DELETE' }), 'Photo permanently deleted')}>Delete forever</button>
             </>
           ) : (
@@ -405,8 +405,8 @@ function PhotoModal({ photo, albums, inBin, onClose, onExport, onChanged, onErro
                 method: 'PATCH', body: { capture_date: captureDate || null, remark, album_id: albumId || null },
               }), 'Saved')}>Save changes</button>
               <div className="row gap">
-                <button className="btn grow" onClick={onExport}>⬇️ Export</button>
-                <button className="btn danger grow" disabled={busy} onClick={async () => (await ask.confirm({ title: 'Delete this photo?', message: 'It will be moved to the recycle bin. You can restore it within 30 days.', confirmText: 'Move to bin', danger: true })) && act(() => api(`/api/photos/${photo.id}`, { method: 'DELETE' }), 'Moved to recycle bin')}>🗑️ Delete</button>
+                <button className="btn grow" onClick={onExport}><DownloadIcon size={17} /> Export</button>
+                <button className="btn danger grow" disabled={busy} onClick={async () => (await ask.confirm({ title: 'Delete this photo?', message: 'It will be moved to the recycle bin. You can restore it within 30 days.', confirmText: 'Move to bin', danger: true })) && act(() => api(`/api/photos/${photo.id}`, { method: 'DELETE' }), 'Moved to recycle bin')}><TrashIcon size={17} /> Delete</button>
               </div>
             </>
           )}
@@ -473,7 +473,7 @@ function ProfileModal({ user, onClose, onSaved, onLogout }) {
     try {
       await api('/api/auth/profile', { method: 'PATCH', body: { display_name: nickname } });
       onSaved(nickname.trim());
-      setMsg({ ok: true, text: 'Nickname saved ✓' });
+      setMsg({ ok: true, text: 'Nickname saved' });
     } catch (err) { setMsg({ ok: false, text: err.message }); }
     setBusy(false);
   }
@@ -483,7 +483,7 @@ function ProfileModal({ user, onClose, onSaved, onLogout }) {
     try {
       await api('/api/auth/profile', { method: 'PATCH', body: { current_password: current, new_password: next } });
       setCurrent(''); setNext('');
-      setMsg({ ok: true, text: 'Password changed ✓' });
+      setMsg({ ok: true, text: 'Password changed' });
     } catch (err) { setMsg({ ok: false, text: err.message }); }
     setBusy(false);
   }
