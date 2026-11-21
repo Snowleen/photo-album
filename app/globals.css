@@ -442,3 +442,7 @@ input:focus, textarea:focus, select:focus { outline: 2px solid color-mix(in srgb
 .avatar.lg { width: 52px; height: 52px; font-size: 1.3rem; }
 .profile-head { display: flex; align-items: center; gap: 14px; }
 @media (max-width: 560px) { .profile-btn { padding: 3px; border: none; } }
+
+/* Tab count badge */
+.tabs .count { display: inline-block; min-width: 22px; padding: 1px 7px; margin-left: 4px; border-radius: 999px; font-size: 0.75rem; background: var(--accent-soft); color: var(--primary); }
+.tabs button.active .count { background: rgba(255, 255, 255, 0.25); color: #fff; }

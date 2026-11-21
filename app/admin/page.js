@@ -21,6 +21,16 @@ export default function AdminPage() {
   const [users, setUsers] = useState([]);
   const [error, setError] = useState('');
   const [toast, setToast] = useState('');
+  const [tab, setTab] = useState('spaces'); // spaces | logins
+
+  // Remember the last tab on this device.
+  useEffect(() => {
+    try { const t = localStorage.getItem('admin_tab'); if (t === 'logins') setTab(t); } catch {}
+  }, []);
+  function switchTab(t) {
+    setTab(t);
+    try { localStorage.setItem('admin_tab', t); } catch {}
+  }
   const [showNew, setShowNew] = useState(false);
   const [addUserTo, setAddUserTo] = useState(null);
   const [resetUser, setResetUser] = useState(null);
@@ -102,12 +112,23 @@ export default function AdminPage() {
         </div>
       </header>
 
+      <nav className="tabs">
+        <button className={tab === 'spaces' ? 'active' : ''} onClick={() => switchTab('spaces')}>
+          📚 Album spaces {spaces && <span className="count">{spaces.length}</span>}
+        </button>
+        <button className={tab === 'logins' ? 'active' : ''} onClick={() => switchTab('logins')}>
+          👥 Logins <span className="count">{users.length}</span>
+        </button>
+      </nav>
+
       <main className="container">
-        <div className="row-between">
+        {error && <p className="error">{error}</p>}
+
+        {tab === 'spaces' && (<>
+        <div className="row-between toolbar">
           <h2>Album spaces</h2>
           <button className="btn primary" onClick={() => setShowNew(true)}>+ New space</button>
         </div>
-        {error && <p className="error">{error}</p>}
         {!spaces && <p className="muted">Loading…</p>}
         {spaces?.length === 0 && <p className="muted empty">No spaces yet. Create one for a person, couple, family or pet.</p>}
 
@@ -162,12 +183,14 @@ export default function AdminPage() {
             );
           })}
         </div>
+        </>)}
 
-        <div className="row-between section-head">
+        {tab === 'logins' && (<>
+        <div className="row-between toolbar">
           <h2>Logins</h2>
-          <span className="muted small">{users.length} total</span>
+          <span className="muted small">{users.length} total · add new logins from a space’s “+ Add member”</span>
         </div>
-        {users.length === 0 && <p className="muted small">No logins yet. Invite a member to a space to create one.</p>}
+        {users.length === 0 && <p className="muted empty">No logins yet. Go to Album spaces and use “+ Add member” to create one.</p>}
         {users.length > 0 && (
           <div className="card accounts">
             {users.map((u) => (
@@ -195,6 +218,7 @@ export default function AdminPage() {
             ))}
           </div>
         )}
+        </>)}
       </main>
 
       {showNew && <NewSpaceModal onClose={() => setShowNew(false)} onDone={() => { setShowNew(false); load(); }} />}
