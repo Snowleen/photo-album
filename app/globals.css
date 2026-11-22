@@ -600,3 +600,4 @@ a.btn { text-decoration: none; }
   background-size: 33.333% 33.333%; background-position: -1px -1px; }
 .zoom-row { flex-direction: row; align-items: center; gap: 12px; }
 .zoom-row input[type=range] { flex: 1; accent-color: var(--primary); padding: 0; border: none; }
+.tile-label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }

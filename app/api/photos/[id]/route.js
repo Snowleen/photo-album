@@ -21,6 +21,11 @@ export async function PATCH(req, { params }) {
 
   const body = await readJson(req);
   const patch = {};
+  if (body.name !== undefined) {
+    const name = String(body.name).trim().replace(/[\r\n\t]+/g, ' ');
+    if (!name) return fail('Photo name cannot be empty');
+    patch.original_name = name.slice(0, 120);
+  }
   if (body.capture_date !== undefined) patch.capture_date = body.capture_date || null;
   if (body.remark !== undefined) patch.remark = body.remark ? String(body.remark).slice(0, 2000) : null;
   if (body.album_id !== undefined) {

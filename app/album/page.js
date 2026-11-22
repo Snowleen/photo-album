@@ -25,6 +25,7 @@ const ALBUM_SORTS = [
   { key: 'name_desc', label: 'Name (Z–A)' },
 ];
 const byText = (a, b) => (a || '').localeCompare(b || '', undefined, { sensitivity: 'base', numeric: true });
+const photoName = (p) => (p.original_name || 'Photo').replace(/\.(jpe?g|png|heic|heif|webp|gif|bmp|tiff?|avif)$/i, '');
 const takenDate = (p) => p.capture_date || (p.uploaded_at || '').slice(0, 10);
 
 function sortPhotos(list, key) {
@@ -34,8 +35,8 @@ function sortPhotos(list, key) {
     uploaded_asc: (a, b) => a.uploaded_at.localeCompare(b.uploaded_at),
     taken_desc: (a, b) => takenDate(b).localeCompare(takenDate(a)) || b.uploaded_at.localeCompare(a.uploaded_at),
     taken_asc: (a, b) => takenDate(a).localeCompare(takenDate(b)) || a.uploaded_at.localeCompare(b.uploaded_at),
-    name_asc: (a, b) => byText(a.original_name, b.original_name),
-    name_desc: (a, b) => byText(b.original_name, a.original_name),
+    name_asc: (a, b) => byText(photoName(a), photoName(b)),
+    name_desc: (a, b) => byText(photoName(b), photoName(a)),
   }[key];
   return cmp ? out.sort(cmp) : out;
 }
@@ -272,7 +273,7 @@ export default function AlbumPage() {
                     {p.url ? <img src={p.url} alt={p.remark || ''} loading="lazy" /> : <span className="muted">missing</span>}
                     {selectMode && <span className="check">{selected.has(p.id) && <CheckIcon size={15} />}</span>}
                     <span className="tile-label">
-                      {inBin ? `${daysLeft(p.deleted_at)} days left` : fmtDate(p.capture_date || p.uploaded_at)}
+                      {inBin ? `${daysLeft(p.deleted_at)} days left` : photoSort.startsWith('name') ? photoName(p) : fmtDate(p.capture_date || p.uploaded_at)}
                     </span>
                   </button>
                 ))}
@@ -449,6 +450,9 @@ function UploadModal({ albums, defaultAlbum, onClose, onDone }) {
 }
 
 function PhotoModal({ photo, albums, inBin, onClose, onExport, onChanged, onError, ask, notify, onCoverChanged }) {
+  // Name without the file extension, e.g. "IMG_4821.JPG" -> "IMG_4821"
+  const originalName = (photo.original_name || '').replace(/\.(jpe?g|png|heic|heif|webp|gif|bmp|tiff?|avif)$/i, '');
+  const [name, setName] = useState(originalName);
   const [captureDate, setCaptureDate] = useState(photo.capture_date || '');
   const [remark, setRemark] = useState(photo.remark || '');
   const [albumId, setAlbumId] = useState(photo.album_id || '');
@@ -484,7 +488,7 @@ function PhotoModal({ photo, albums, inBin, onClose, onExport, onChanged, onErro
   }
 
   return (
-    <Modal title={photo.original_name || 'Photo'} onClose={onClose} wide>
+    <Modal title={(inBin ? originalName : name.trim()) || 'Photo'} onClose={onClose} wide>
       <div className="photo-detail">
         <div className="photo-view">{photo.url && <img src={photo.url} alt={photo.remark || ''} />}</div>
         <div className="form">
@@ -502,6 +506,10 @@ function PhotoModal({ photo, albums, inBin, onClose, onExport, onChanged, onErro
             </>
           ) : (
             <>
+              <label>Name
+                <input value={name} onChange={(e) => setName(e.target.value)} maxLength={120} placeholder="e.g. Graduation day" />
+                <span className="hint">Used for sorting A–Z and as the file name when you export.</span>
+              </label>
               <label>Capture date <span className="muted small">(optional)</span>
                 <input type="date" value={captureDate} onChange={(e) => setCaptureDate(e.target.value)} />
               </label>
@@ -522,8 +530,14 @@ function PhotoModal({ photo, albums, inBin, onClose, onExport, onChanged, onErro
                   {isCover && <button type="button" className="link small" onClick={() => setCropping(true)}>Adjust</button>}
                 </div>
               )}
-              <button className="btn primary block" disabled={busy} onClick={() => act(() => api(`/api/photos/${photo.id}`, {
-                method: 'PATCH', body: { capture_date: captureDate || null, remark, album_id: albumId || null },
+              <button className="btn primary block" disabled={busy || !name.trim()} onClick={() => act(() => api(`/api/photos/${photo.id}`, {
+                method: 'PATCH',
+                body: {
+                  capture_date: captureDate || null,
+                  remark,
+                  album_id: albumId || null,
+                  ...(name.trim() !== originalName ? { name: name.trim() } : {}), // only rename when changed
+                },
               }), 'Saved')}>Save changes</button>
               <div className="row gap">
                 <button className="btn grow" onClick={onExport}><DownloadIcon size={17} /> Export</button>
