@@ -1,5 +1,7 @@
 import { db, ok, fail, readJson } from '@/lib/db';
 import { requireUser } from '@/lib/auth';
+import { BUCKET } from '@/lib/db';
+import { shareImagePath } from '@/lib/share';
 
 const num01 = (v) => typeof v === 'number' && Number.isFinite(v) && v >= -0.001 && v <= 1.001;
 
@@ -51,5 +53,6 @@ export async function DELETE(_req, { params }) {
   if (!me) return fail('Unauthorized', 401);
   const { error } = await db().from('albums').delete().eq('id', params.id).eq('space_id', me.space_id);
   if (error) return fail(error.message, 500);
+  await db().storage.from(BUCKET).remove([shareImagePath(me.space_id, params.id)]);
   return ok();
 }

@@ -11,7 +11,7 @@ export async function GET() {
   const [{ data: albums, error }, { data: photos }] = await Promise.all([
     db()
       .from('albums')
-      .select('id, name, created_at, cover_photo_id, cover_crop')
+      .select('id, name, created_at, cover_photo_id, cover_crop, share_token')
       .eq('space_id', me.space_id)
       .order('created_at', { ascending: false }),
     db()
@@ -40,6 +40,7 @@ export async function GET() {
       id: a.id,
       name: a.name,
       created_at: a.created_at,
+      share_token: a.share_token || null,
       count: stats[a.id]?.count || 0,
       cover_photo_id: valid ? a.cover_photo_id : null,
       cover_crop: valid ? a.cover_crop : null,

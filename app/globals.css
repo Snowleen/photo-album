@@ -601,3 +601,19 @@ a.btn { text-decoration: none; }
 .zoom-row { flex-direction: row; align-items: center; gap: 12px; }
 .zoom-row input[type=range] { flex: 1; accent-color: var(--primary); padding: 0; border: none; }
 .tile-label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* ---------- Copy to / share / import-export ---------- */
+.album-pick { justify-content: flex-start; }
+.progress-dlg { text-align: left; }
+.progress-bar { height: 8px; border-radius: 99px; background: var(--accent-soft); overflow: hidden; margin: 6px 0 2px; }
+.progress-bar span { display: block; height: 100%; background: var(--primary); border-radius: 99px; transition: width 0.25s; }
+.share-intro { display: flex; gap: 12px; align-items: flex-start; background: var(--accent-soft); border-radius: 14px; padding: 14px; color: var(--text); }
+.share-intro .icon { color: var(--primary); flex: none; margin-top: 2px; }
+.share-intro p { margin: 0; line-height: 1.55; font-size: 0.92rem; }
+.share-preview { border: 1px solid var(--border); border-radius: 14px; overflow: hidden; background: #f6f7f9; }
+.share-preview img { display: block; width: 100%; aspect-ratio: 1200 / 630; object-fit: cover; }
+.share-preview-wait { aspect-ratio: 1200 / 630; display: grid; place-items: center; color: var(--muted); font-size: 0.9rem; }
+.share-preview-text { display: flex; flex-direction: column; gap: 2px; padding: 10px 12px; font-size: 0.88rem; }
+.share-preview-text span { color: var(--muted); font-size: 0.78rem; }
+.bottom-bar .btn { padding-left: 10px; padding-right: 10px; }
+@media (max-width: 480px) { .bottom-bar { gap: 6px; padding-left: 8px; padding-right: 8px; } .bottom-bar .btn { font-size: 0.85rem; gap: 5px; } }

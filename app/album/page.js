@@ -1,5 +1,5 @@
 'use client';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { api, uploadPhoto, fmtDate, daysLeft } from '@/lib/client';
 import { exportImage, exportPdf } from '@/lib/exporter';
@@ -8,7 +8,8 @@ import ThemeDecor from '@/components/ThemeDecor';
 import { useDialog } from '@/components/useDialog';
 import { MaintenanceWatcher } from '@/components/MaintenanceNotice';
 import CoverCropper, { AlbumCover } from '@/components/CoverCropper';
-import { ModeIcon, ImageIcon, AlbumsIcon, TrashIcon, ArrowLeftIcon, CheckIcon, RestoreIcon, DownloadIcon, MoveIcon, PlusIcon, SwitchIcon } from '@/components/Icons';
+import { makeSharePreview, exportAlbumZip, importAlbumZip } from '@/lib/albumTools';
+import { ModeIcon, ImageIcon, AlbumsIcon, TrashIcon, ArrowLeftIcon, CheckIcon, RestoreIcon, DownloadIcon, MoveIcon, PlusIcon, SwitchIcon, CopyIcon, ShareIcon, UploadIcon, LinkIcon } from '@/components/Icons';
 
 const PHOTO_SORTS = [
   { key: 'uploaded_desc', label: 'Newest uploaded' },
@@ -88,7 +89,10 @@ export default function AlbumPage() {
   const [detail, setDetail] = useState(null);
   const [showUpload, setShowUpload] = useState(false);
   const [exportList, setExportList] = useState(null);
-  const [showMove, setShowMove] = useState(false);
+  const [pickFor, setPickFor] = useState(null); // 'move' | 'copy' — choose a target album
+  const [progress, setProgress] = useState(null); // { title, text, done, total }
+  const [shareOpen, setShareOpen] = useState(false);
+  const importRef = useRef(null);
   const [toast, setToast] = useState('');
   const [showSwitch, setShowSwitch] = useState(false);
   const [showProfile, setShowProfile] = useState(false);
@@ -141,6 +145,53 @@ export default function AlbumPage() {
   const sortedAlbums = useMemo(() => sortAlbums(albums, albumSort), [albums, albumSort]);
   // keep the on-screen order for exports (e.g. PDF page order)
   const selectedPhotos = useMemo(() => sortedPhotos.filter((p) => selected.has(p.id)), [sortedPhotos, selected]);
+
+  /** Copy or move the selected photos into an album (existing or new). */
+  async function sendTo(action, { album_id = null, new_album_name } = {}) {
+    const ids = selectedPhotos.map((p) => p.id);
+    setPickFor(null);
+    try {
+      if (action === 'move') {
+        await api('/api/photos/bulk', { method: 'POST', body: { action, ids, album_id, new_album_name } });
+        notify(`Moved ${ids.length} photo(s)`);
+      } else {
+        let target = album_id;
+        for (let i = 0; i < ids.length; i += 40) {
+          setProgress({ title: 'Copying photos', text: `Copying ${Math.min(i + 40, ids.length)} of ${ids.length}…`, done: i, total: ids.length });
+          const r = await api('/api/photos/bulk', {
+            method: 'POST',
+            body: { action: 'copy', ids: ids.slice(i, i + 40), ...(target ? { album_id: target } : { new_album_name }) },
+          });
+          target = r.album_id;
+        }
+        notify(`Copied ${ids.length} photo(s)`);
+      }
+      exitSelect();
+      await refresh();
+    } catch (e) { handleErr(e); }
+    setProgress(null);
+  }
+
+  async function exportAlbum() {
+    const album = albums.find((a) => a.id === openAlbum.id) || openAlbum;
+    try {
+      await exportAlbumZip(album, sortedPhotos, (done, total, stage) =>
+        setProgress({ title: 'Exporting album', text: stage === 'zip' ? 'Creating the .zip file…' : `Preparing photo ${done + 1} of ${total}…`, done, total }));
+      notify('Album exported — check your downloads');
+    } catch (e) { notify(e.message || 'Export failed'); }
+    setProgress(null);
+  }
+
+  async function importAlbum(file) {
+    if (!file) return;
+    try {
+      const r = await importAlbumZip(file, (done, total) =>
+        setProgress({ title: 'Importing album', text: `Uploading photo ${Math.min(done + 1, total)} of ${total}…`, done, total }));
+      await loadAlbums();
+      notify(`Imported “${r.album.name}” — ${r.count} photo(s)${r.failed ? `, ${r.failed} could not be imported` : ''}`);
+    } catch (e) { notify(e.message || 'Import failed'); }
+    setProgress(null);
+  }
 
   async function bulk(action, extra = {}) {
     try {
@@ -197,6 +248,12 @@ export default function AlbumPage() {
               const name = await ask.prompt({ title: 'New album', label: 'Album name', placeholder: 'e.g. Honeymoon in Bali', confirmText: 'Create' });
               if (name) { try { await api('/api/albums', { method: 'POST', body: { name } }); loadAlbums(); } catch (e) { handleErr(e); } }
             }}>+ New album</button>}
+            {tab === 'albums' && !openAlbum && (
+              <>
+                <button className="btn" onClick={() => importRef.current?.click()}><UploadIcon size={16} /> Import album</button>
+                <input ref={importRef} type="file" accept=".zip,application/zip" hidden onChange={(e) => { importAlbum(e.target.files?.[0]); e.target.value = ''; }} />
+              </>
+            )}
             {openAlbum && (
               <>
                 <button className="btn small" onClick={async () => {
@@ -207,6 +264,8 @@ export default function AlbumPage() {
                   if (!(await ask.confirm({ title: `Delete album “${openAlbum.name}”?`, message: 'The photos inside are kept — they just won’t be in this album any more.', confirmText: 'Delete album', danger: true }))) return;
                   try { await api(`/api/albums/${openAlbum.id}`, { method: 'DELETE' }); setOpenAlbum(null); loadAlbums(); } catch (e) { handleErr(e); }
                 }}>Delete album</button>
+                {photos?.length > 0 && <button className="btn small" onClick={() => setShareOpen(true)}><ShareIcon size={15} /> Share</button>}
+                {photos?.length > 0 && <button className="btn small" onClick={exportAlbum}><DownloadIcon size={15} /> Export album</button>}
               </>
             )}
             {showGrid && photos?.length > 0 && (
@@ -295,7 +354,8 @@ export default function AlbumPage() {
           ) : (
             <>
               <button className="btn" disabled={!selected.size} onClick={() => setExportList(selectedPhotos)}><DownloadIcon size={17} /> Export</button>
-              <button className="btn" disabled={!selected.size} onClick={() => setShowMove(true)}><MoveIcon size={17} /> Move</button>
+              <button className="btn" disabled={!selected.size} onClick={() => setPickFor('copy')}><CopyIcon size={17} /> Copy to</button>
+              <button className="btn" disabled={!selected.size} onClick={() => setPickFor('move')}><MoveIcon size={17} /> Move</button>
               <button className="btn danger" disabled={!selected.size} onClick={async () => (await ask.confirm({ title: `Delete ${selected.size} photo(s)?`, message: 'They will be moved to the recycle bin. You can restore them within 30 days.', confirmText: 'Move to bin', danger: true })) && bulk('delete')}><TrashIcon size={17} /> Delete</button>
             </>
           )}
@@ -334,16 +394,44 @@ export default function AlbumPage() {
           onDone={() => { setExportList(null); exitSelect(); }}
         />
       )}
-      {showMove && (
-        <Modal title={`Move ${selected.size} photo(s) to album`} onClose={() => setShowMove(false)}>
+      {pickFor && (
+        <Modal title={`${pickFor === 'copy' ? 'Copy' : 'Move'} ${selected.size} photo(s) to…`} onClose={() => setPickFor(null)}>
           <div className="stack">
-            {albums.map((a) => (
-              <button key={a.id} className="btn block" onClick={() => { setShowMove(false); bulk('move', { album_id: a.id }); }}><AlbumsIcon size={16} /> {a.name}</button>
+            <button className="btn block primary" onClick={async () => {
+              const kind = pickFor;
+              const name = await ask.prompt({ title: 'New album', label: 'Album name', placeholder: 'e.g. Best of 2025', confirmText: kind === 'copy' ? 'Create & copy' : 'Create & move' });
+              if (name) sendTo(kind, { new_album_name: name });
+            }}><PlusIcon size={16} /> New album</button>
+            {sortAlbums(albums, 'name_asc').filter((a) => !(openAlbum && a.id === openAlbum.id)).map((a) => (
+              <button key={a.id} className="btn block album-pick" onClick={() => sendTo(pickFor, { album_id: a.id })}><AlbumsIcon size={16} /> {a.name}</button>
             ))}
-            <button className="btn block ghost" onClick={() => { setShowMove(false); bulk('move', { album_id: null }); }}>Remove from album</button>
-            {albums.length === 0 && <p className="muted small">No albums yet — create one in the Albums tab.</p>}
+            {pickFor === 'move' && (
+              <button className="btn block ghost" onClick={() => sendTo('move', { album_id: null })}>Remove from album</button>
+            )}
+            {pickFor === 'copy' && <p className="muted small">Copies are independent — editing or deleting one won’t change the other.</p>}
           </div>
         </Modal>
+      )}
+      {progress && (
+        <div className="dlg-backdrop">
+          <div className="dlg progress-dlg" role="status">
+            <h3>{progress.title}</h3>
+            <p className="dlg-msg">{progress.text}</p>
+            <div className="progress-bar"><span style={{ width: `${progress.total ? Math.round((progress.done / progress.total) * 100) : 0}%` }} /></div>
+            <p className="muted small">Please keep this page open.</p>
+          </div>
+        </div>
+      )}
+      {shareOpen && openAlbum && (
+        <ShareModal
+          album={albums.find((a) => a.id === openAlbum.id) || openAlbum}
+          photos={sortedPhotos}
+          mode={mode}
+          ask={ask}
+          onClose={() => setShareOpen(false)}
+          onChanged={loadAlbums}
+          notify={notify}
+        />
       )}
       {showSwitch && (
         <Modal title="Switch album space" onClose={() => setShowSwitch(false)}>
@@ -662,6 +750,105 @@ function ProfileModal({ user, onClose, onSaved, onLogout }) {
         {msg && <div className={msg.ok ? 'note-ok' : 'note-err'}>{msg.text}</div>}
         <div className="divider" />
         <button className="btn danger block" onClick={onLogout}>Log out</button>
+      </div>
+    </Modal>
+  );
+}
+
+function ShareModal({ album, photos, mode, ask, onClose, onChanged, notify }) {
+  const [token, setToken] = useState(album.share_token || null);
+  const [busy, setBusy] = useState(false);
+  const [previewReady, setPreviewReady] = useState(false);
+  const [error, setError] = useState('');
+  const link = token ? `${window.location.origin}/s/${token}` : '';
+  const message = `Click here to view photos in “${album.name}”: ${link}`;
+
+  // full-size cover photo for the link preview (chosen cover, or the newest photo)
+  const coverPhoto =
+    photos.find((p) => p.id === album.cover_photo_id) ||
+    [...photos].sort((a, b) => b.uploaded_at.localeCompare(a.uploaded_at))[0];
+
+  async function enable() {
+    setBusy(true); setError('');
+    try {
+      const r = await api(`/api/albums/${album.id}/share`, { method: 'POST' });
+      setToken(r.token);
+      onChanged();
+      // (re)make the WhatsApp / Facebook preview picture with the current cover
+      await makeSharePreview({
+        album: { name: album.name, count: photos.length },
+        mode,
+        coverUrl: coverPhoto?.url,
+        crop: album.cover_photo_id === coverPhoto?.id ? album.cover_crop : null,
+        upload: r.preview_upload,
+      }).catch(() => {});
+      setPreviewReady(true);
+    } catch (e) { setError(e.message); }
+    setBusy(false);
+  }
+  // already shared: refresh the preview picture (cover may have changed)
+  useEffect(() => { if (album.share_token) enable(); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, []);
+
+  async function stop() {
+    const yes = await ask.confirm({
+      title: 'Stop sharing this album?',
+      message: 'The link will stop working for everyone straight away. You can share again later (it will be a new link).',
+      confirmText: 'Stop sharing',
+      danger: true,
+    });
+    if (!yes) return;
+    setBusy(true);
+    try {
+      await api(`/api/albums/${album.id}/share`, { method: 'DELETE' });
+      setToken(null); setPreviewReady(false);
+      onChanged();
+      notify('Sharing stopped');
+    } catch (e) { setError(e.message); }
+    setBusy(false);
+  }
+
+  async function copy() {
+    try { await navigator.clipboard.writeText(link); notify('Link copied'); } catch { notify('Could not copy — select the link and copy it'); }
+  }
+  async function nativeShare() {
+    try { await navigator.share({ title: album.name, text: `Click here to view photos in “${album.name}”`, url: link }); } catch {}
+  }
+
+  return (
+    <Modal title={`Share “${album.name}”`} onClose={onClose}>
+      <div className="stack">
+        {!token ? (
+          <>
+            <div className="share-intro">
+              <LinkIcon size={22} />
+              <p>Create a link to this album. Anyone with the link can view its {photos.length} photo{photos.length === 1 ? '' : 's'} in a beautiful gallery — no sign-in needed. Nobody can change or delete anything.</p>
+            </div>
+            {error && <div className="note-err">{error}</div>}
+            <button className="btn primary block" disabled={busy} onClick={enable}>{busy ? 'Creating link…' : 'Create share link'}</button>
+          </>
+        ) : (
+          <>
+            <div className="share-preview">
+              {previewReady ? <img src={`/s/${token}/og?v=${Date.now()}`} alt="Link preview" /> : <div className="share-preview-wait">Preparing preview…</div>}
+              <div className="share-preview-text">
+                <strong>Click here to view photos in “{album.name}”</strong>
+                <span>{window.location.host}</span>
+              </div>
+            </div>
+            <div className="copy-box">
+              <input readOnly value={link} onFocus={(e) => e.target.select()} />
+              <button className="btn primary" onClick={copy}>Copy</button>
+            </div>
+            <div className="row gap">
+              <a className="btn grow" href={`https://wa.me/?text=${encodeURIComponent(message)}`} target="_blank" rel="noreferrer">WhatsApp</a>
+              {typeof navigator !== 'undefined' && navigator.share && <button className="btn grow" onClick={nativeShare}><ShareIcon size={16} /> More…</button>}
+              <a className="btn grow" href={`/s/${token}`} target="_blank" rel="noreferrer">Open</a>
+            </div>
+            <p className="muted small">Anyone with this link can view the photos. New photos you add to this album appear automatically.</p>
+            {error && <div className="note-err">{error}</div>}
+            <button className="btn danger block" disabled={busy} onClick={stop}>Stop sharing</button>
+          </>
+        )}
       </div>
     </Modal>
   );

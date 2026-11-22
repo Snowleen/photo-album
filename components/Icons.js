@@ -39,6 +39,10 @@ export const CheckIcon = (p) => <Svg {...p}><path d="M5 12.5l4.5 4.5L19 7.5" /><
 export const CloseIcon = (p) => <Svg {...p}><path d="M6 6l12 12M18 6 6 18" /></Svg>;
 export const InboxIcon = (p) => <Svg {...p}><path d="M3 13.5 5.6 5.7A2.5 2.5 0 0 1 8 4h8a2.5 2.5 0 0 1 2.4 1.7L21 13.5V18a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" /><path d="M3 13.5h5l1.5 2.5h5l1.5-2.5h5" /></Svg>;
 export const WrenchIcon = (p) => <Svg {...p}><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z" /></Svg>;
+export const CopyIcon = (p) => <Svg {...p}><rect x="8" y="8" width="13" height="13" rx="2.5" /><path d="M16 8V5.5A2.5 2.5 0 0 0 13.5 3h-8A2.5 2.5 0 0 0 3 5.5v8A2.5 2.5 0 0 0 5.5 16H8" /></Svg>;
+export const ShareIcon = (p) => <Svg {...p}><circle cx="18" cy="5" r="2.6" /><circle cx="6" cy="12" r="2.6" /><circle cx="18" cy="19" r="2.6" /><path d="M8.3 10.7l7.4-4.3M8.3 13.3l7.4 4.3" /></Svg>;
+export const UploadIcon = (p) => <Svg {...p}><path d="M12 15V4M7.5 8.5 12 4l4.5 4.5M5 20h14" /></Svg>;
+export const LinkIcon = (p) => <Svg {...p}><path d="M10 14a4.5 4.5 0 0 0 6.4 0l3-3a4.5 4.5 0 0 0-6.4-6.4l-1 1" /><path d="M14 10a4.5 4.5 0 0 0-6.4 0l-3 3a4.5 4.5 0 0 0 6.4 6.4l1-1" /></Svg>;
 export const SwitchIcon = (p) => <Svg {...p}><path d="M8 9l4-4 4 4M8 15l4 4 4-4" /></Svg>;
 
 /** Icon for an album space's theme. */

@@ -27,6 +27,8 @@ export async function DELETE(_req, { params }) {
   if (!(await requireAdmin())) return fail('Unauthorized', 401);
   const { data: photos } = await db().from('photos').select('storage_path').eq('space_id', params.id);
   await removeFiles(filesFor(photos || []));
+  const { data: shareFiles } = await db().storage.from('photos').list(`${params.id}/share`);
+  if (shareFiles?.length) await removeFiles(shareFiles.map((f) => `${params.id}/share/${f.name}`));
   const { error } = await db().from('spaces').delete().eq('id', params.id);
   if (error) return fail(error.message, 500);
   return ok();

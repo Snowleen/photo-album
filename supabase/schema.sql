@@ -69,6 +69,7 @@ create table if not exists photos (
 -- Album cover (added after photos exists because it points at a photo)
 alter table albums add column if not exists cover_photo_id uuid references photos(id) on delete set null;
 alter table albums add column if not exists cover_crop jsonb;
+alter table albums add column if not exists share_token text unique;
 
 create table if not exists signup_requests (
   id uuid primary key default gen_random_uuid(),

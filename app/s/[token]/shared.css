@@ -1,0 +1,48 @@
+/* ---------- Public shared album page ---------- */
+.shared { --accent: #e0527f; --accent-soft: #fde7ef; --bg1: #fff5f8; --bg2: #ffe4ee; --ink: #3b1d2a; --ink-soft: #8a6574;
+  min-height: 100vh; background: linear-gradient(180deg, var(--bg1), var(--bg2)); color: var(--ink); font-family: var(--font-sans), system-ui, sans-serif; }
+.shared.s-family { --accent: #2f8fe0; --accent-soft: #dff1ff; --bg1: #f3faff; --bg2: #dcefff; --ink: #19405f; --ink-soft: #5d7f99; }
+.shared.s-pet { --accent: #e0873a; --accent-soft: #fff0dc; --bg1: #fffaf2; --bg2: #ffecd2; --ink: #4a2f1a; --ink-soft: #9a7559; }
+.shared.s-individual { --accent: #4f5bd5; --accent-soft: #e8eaff; --bg1: #f7f8fc; --bg2: #eceffa; --ink: #1f2333; --ink-soft: #6b7080; }
+
+.shared-hero { max-width: 1100px; margin: 0 auto; padding: clamp(20px, 5vw, 48px) clamp(16px, 4vw, 40px) 10px; display: grid; grid-template-columns: minmax(0, 420px) 1fr; gap: clamp(18px, 4vw, 40px); align-items: center; }
+.shared-cover { position: relative; aspect-ratio: 4 / 3; border-radius: 26px; overflow: hidden; background: var(--accent-soft); box-shadow: 0 24px 50px -22px rgba(0, 0, 0, 0.45); border: 5px solid #fff; }
+.shared-cover img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.shared-cover img.cropped { position: absolute; max-width: none; object-fit: fill; }
+.shared-from { margin: 0 0 6px; color: var(--accent); font-weight: 700; font-size: 0.9rem; letter-spacing: 0.02em; }
+.shared-title h1 { margin: 0; font-family: var(--font-serif), Georgia, serif; font-weight: 600; font-size: clamp(2rem, 5vw, 3.4rem); line-height: 1.1; word-break: break-word; }
+.shared-count { margin: 10px 0 0; color: var(--ink-soft); }
+
+.shared-main { max-width: 1100px; margin: 0 auto; padding: 24px clamp(10px, 3vw, 40px) 40px; }
+.shared-empty { text-align: center; color: var(--ink-soft); padding: 60px 0; }
+.shared-grid { columns: 4 220px; column-gap: 12px; }
+.shared-tile { display: block; width: 100%; margin: 0 0 12px; padding: 0; border: 4px solid #fff; border-radius: 18px; overflow: hidden; background: #fff; cursor: zoom-in; break-inside: avoid; box-shadow: 0 10px 24px -14px rgba(0, 0, 0, 0.35); transition: transform 0.18s; }
+.shared-tile:hover { transform: translateY(-2px); }
+.shared-tile img { display: block; width: 100%; height: auto; }
+
+.shared-footer { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 12px 18px; padding: 26px 16px 34px; color: var(--ink-soft); font-size: 0.92rem; text-align: center; }
+.shared-brand { display: inline-flex; align-items: center; gap: 8px; text-decoration: none; }
+.shared-brand .brand-word { color: #e8578a; font-size: 1.15rem; }
+.shared-cta { padding: 9px 16px; border-radius: 999px; background: var(--accent); color: #fff; font-weight: 600; text-decoration: none; }
+
+/* full-screen viewer */
+.viewer { position: fixed; inset: 0; z-index: 100; background: rgba(10, 8, 10, 0.94); display: flex; align-items: center; justify-content: center; animation: vfade 0.15s ease-out; touch-action: pan-y; }
+@keyframes vfade { from { opacity: 0; } }
+.viewer-img { max-width: 94vw; max-height: 80vh; object-fit: contain; border-radius: 6px; box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5); }
+.viewer-top { position: absolute; top: 0; left: 0; right: 0; display: flex; justify-content: space-between; align-items: center; padding: 12px 14px; color: #ddd; font-size: 0.9rem; }
+.viewer-btn, .viewer-nav { border: none; background: rgba(255, 255, 255, 0.12); color: #fff; width: 44px; height: 44px; border-radius: 50%; display: grid; place-items: center; cursor: pointer; }
+.viewer-btn:hover, .viewer-nav:hover { background: rgba(255, 255, 255, 0.24); }
+.viewer-nav { position: absolute; top: 50%; transform: translateY(-50%); }
+.viewer-nav.prev { left: 12px; }
+.viewer-nav.next { right: 12px; }
+.viewer-nav.next .icon { transform: rotate(180deg); }
+.viewer-caption { position: absolute; left: 0; right: 0; bottom: 0; padding: 14px 18px calc(16px + env(safe-area-inset-bottom)); color: #f2f2f2; text-align: center; background: linear-gradient(transparent, rgba(0, 0, 0, 0.7)); display: flex; flex-direction: column; gap: 2px; }
+.viewer-caption span { color: #c9c9c9; font-size: 0.85rem; }
+.viewer-caption p { margin: 4px auto 0; max-width: 640px; font-size: 0.92rem; line-height: 1.5; }
+
+@media (max-width: 700px) {
+  .shared-hero { grid-template-columns: 1fr; text-align: center; }
+  .shared-grid { columns: 2 140px; column-gap: 8px; }
+  .shared-tile { margin-bottom: 8px; border-width: 3px; border-radius: 14px; }
+  .viewer-nav { display: none; }
+}
