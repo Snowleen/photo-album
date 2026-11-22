@@ -1,6 +1,6 @@
 import { db, ok, fail, readJson } from '@/lib/db';
 import { requireUser } from '@/lib/auth';
-import { purgeExpired, withUrls } from '@/lib/photos';
+import { purgeExpired, withPhotoUrls } from '@/lib/photos';
 
 export const dynamic = 'force-dynamic';
 
@@ -13,9 +13,10 @@ const FIELDS =
 export async function GET(req) {
   const me = await requireUser();
   if (!me) return fail('Unauthorized', 401);
-  await purgeExpired(me.space_id);
-
   const sp = new URL(req.url).searchParams;
+  // Old bin items are cleaned nightly by the cron job; also tidy up when the bin itself is opened.
+  if (sp.get('view') === 'bin') await purgeExpired(me.space_id);
+
   let q = db().from('photos').select(FIELDS).eq('space_id', me.space_id);
   if (sp.get('view') === 'bin') {
     q = q.not('deleted_at', 'is', null).order('deleted_at', { ascending: false });
@@ -25,7 +26,7 @@ export async function GET(req) {
   }
   const { data, error } = await q;
   if (error) return fail(error.message, 500);
-  const photos = await withUrls(data);
+  const photos = await withPhotoUrls(data);
   return ok({ photos: photos.map(({ storage_path, ...p }) => p) });
 }
 

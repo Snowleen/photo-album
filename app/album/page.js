@@ -115,12 +115,13 @@ export default function AlbumPage() {
 
   const refresh = useCallback(() => Promise.all([loadPhotos(), loadAlbums()]), [loadPhotos, loadAlbums]);
 
-  useEffect(() => { if (me) loadAlbums(); }, [me, loadAlbums]);
+  // Start loading straight away (in parallel with the login check) — a signed-out visitor is redirected by handleErr.
+  useEffect(() => { loadAlbums(); }, [loadAlbums]);
   useEffect(() => {
-    if (!me || (tab === 'albums' && !openAlbum)) return;
+    if (tab === 'albums' && !openAlbum) return;
     setPhotos(null);
     loadPhotos();
-  }, [me, tab, openAlbum, loadPhotos]);
+  }, [tab, openAlbum, loadPhotos]);
 
   function switchTab(t) {
     setTab(t);
@@ -270,7 +271,7 @@ export default function AlbumPage() {
                     className={`photo-tile ${selected.has(p.id) ? 'selected' : ''}`}
                     onClick={() => (selectMode ? toggle(p.id) : setDetail(p))}
                   >
-                    {p.url ? <img src={p.url} alt={p.remark || ''} loading="lazy" /> : <span className="muted">missing</span>}
+                    {p.thumb || p.url ? <img src={p.thumb || p.url} alt={p.remark || ''} loading="lazy" decoding="async" /> : <span className="muted">missing</span>}
                     {selectMode && <span className="check">{selected.has(p.id) && <CheckIcon size={15} />}</span>}
                     <span className="tile-label">
                       {inBin ? `${daysLeft(p.deleted_at)} days left` : photoSort.startsWith('name') ? photoName(p) : fmtDate(p.capture_date || p.uploaded_at)}

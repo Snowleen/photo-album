@@ -1,6 +1,6 @@
 import { db, ok, fail, readJson, MODES, MODE_LIMITS } from '@/lib/db';
 import { requireAdmin } from '@/lib/auth';
-import { removeFiles } from '@/lib/photos';
+import { removeFiles, filesFor } from '@/lib/photos';
 
 export async function PATCH(req, { params }) {
   if (!(await requireAdmin())) return fail('Unauthorized', 401);
@@ -26,7 +26,7 @@ export async function PATCH(req, { params }) {
 export async function DELETE(_req, { params }) {
   if (!(await requireAdmin())) return fail('Unauthorized', 401);
   const { data: photos } = await db().from('photos').select('storage_path').eq('space_id', params.id);
-  await removeFiles((photos || []).map((p) => p.storage_path));
+  await removeFiles(filesFor(photos || []));
   const { error } = await db().from('spaces').delete().eq('id', params.id);
   if (error) return fail(error.message, 500);
   return ok();

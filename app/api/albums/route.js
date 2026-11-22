@@ -1,6 +1,6 @@
 import { db, ok, fail, readJson } from '@/lib/db';
 import { requireUser } from '@/lib/auth';
-import { withUrls } from '@/lib/photos';
+import { withPhotoUrls } from '@/lib/photos';
 
 export const dynamic = 'force-dynamic';
 
@@ -46,8 +46,8 @@ export async function GET() {
       cover_path: valid ? chosen.storage_path : stats[a.id]?.latest_path || null,
     };
   });
-  const out = await withUrls(rows, 'cover_path', 'cover');
-  return ok({ albums: out.map(({ cover_path, ...a }) => a) });
+  const out = await withPhotoUrls(rows, 'cover_path', 'cover_full', 'cover');
+  return ok({ albums: out.map(({ cover_path, cover_full, ...a }) => a) });
 }
 
 export async function POST(req) {
